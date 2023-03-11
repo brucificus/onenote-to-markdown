@@ -55,6 +55,7 @@ def extract_pdf_pictures(pdf_path, assets_path, page_name):
             img_num += 1
     return image_names
 
+
 def fix_image_names(md_path, image_names):
     tmp_path = md_path + '.tmp'
     i = 0
@@ -66,7 +67,8 @@ def fix_image_names(md_path, image_names):
             f_tmp.write(body_md)
     shutil.move(tmp_path, md_path)
 
-def handle_page(onenote, elem, path, i):
+
+def handle_element_page(onenote, elem, path, i):
     safe_name = safe_str("%s_%s" % (str(i).zfill(3), elem.attrib['name']))
     if not should_handle(os.path.join(path, safe_name)):
         return
@@ -96,31 +98,45 @@ def handle_page(onenote, elem, path, i):
         # Replace image names in markdown file
         fix_image_names(path_md, image_names)
     except pywintypes.com_error as e:
-        log("!!WARNING!! Page Failed: %s" % path_md)
+        log("!!WARNING!! Page Failed: '%s'" % path_md)
     # Clean up docx, html
     if os.path.exists(path_docx):
         os.remove(path_docx)
     if os.path.exists(path_pdf):
         os.remove(path_pdf)
 
+
+def handle_element_sectiongroup(elem, onenote, path):
+    hier2 = onenote.GetHierarchy(elem.attrib['ID'], win32.constants.hsSections, "")
+    for i, c2 in enumerate(ElementTree.fromstring(hier2)):
+        handle_element(onenote, c2, os.path.join(path, safe_str(elem.attrib['name'])), i)
+
+
+def handle_element_secion(elem, onenote, path):
+    hier2 = onenote.GetHierarchy(elem.attrib['ID'], win32.constants.hsPages, "")
+    for i, c2 in enumerate(ElementTree.fromstring(hier2)):
+        handle_element(onenote, c2, os.path.join(path, safe_str(elem.attrib['name'])), i)
+
+
+def handle_element_notebook(elem, onenote, path):
+    hier2 = onenote.GetHierarchy(elem.attrib['ID'], win32.constants.hsChildren, "")
+    for i, c2 in enumerate(ElementTree.fromstring(hier2)):
+        handle_element(onenote, c2, os.path.join(path, safe_str(elem.attrib['name'])), i)
+
+
 def handle_element(onenote, elem, path='', i=0):
     if elem.tag.endswith('Notebook'):
-        hier2 = onenote.GetHierarchy(elem.attrib['ID'], win32.constants.hsChildren, "")
-        for i,c2 in enumerate(ElementTree.fromstring(hier2)):
-            handle_element(onenote, c2, os.path.join(path, safe_str(elem.attrib['name'])), i)
+        handle_element_notebook(elem, onenote, path)
     elif elem.tag.endswith('Section'):
-        hier2 = onenote.GetHierarchy(elem.attrib['ID'], win32.constants.hsPages, "")
-        for i,c2 in enumerate(ElementTree.fromstring(hier2)):
-            handle_element(onenote, c2, os.path.join(path, safe_str(elem.attrib['name'])), i)
+        handle_element_secion(elem, onenote, path)
     elif elem.tag.endswith('SectionGroup') and (not elem.attrib['name'].startswith('OneNote_RecycleBin') or PROCESS_RECYCLE_BIN):
-        hier2 = onenote.GetHierarchy(elem.attrib['ID'], win32.constants.hsSections, "")
-        for i,c2 in enumerate(ElementTree.fromstring(hier2)):
-            handle_element(onenote, c2, os.path.join(path, safe_str(elem.attrib['name'])), i)
+        handle_element_sectiongroup(elem, onenote, path)
     elif elem.tag.endswith('Page'):
         try:
-            handle_page(onenote, elem, path, i)
+            handle_element_page(onenote, elem, path, i)
         except:
             print("Page failed unexpectedly: %s" % path, file=sys.stderr)
+
 
 if __name__ == "__main__":
     try:
