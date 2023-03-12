@@ -1,9 +1,8 @@
 import os
 import shutil
-import sys
-import typing
 from abc import ABC, abstractmethod
 from enum import Enum
+from itertools import takewhile
 
 import fitz
 import win32com.client as win32
@@ -127,8 +126,18 @@ class OneNoteElementBasedNode(OneNoteNode):
             return self._safe_str(self._element.attrib['name'])
 
     def path(self) -> str:
-        parent_path = self._parent.path() if isinstance(self._parent, OneNoteElementBasedNode) else ''
-        return os.path.join(parent_path, self.name())
+        if self.parent() is not None:
+            return self.name()
+        elif isinstance(self.parent(), OneNoteElementBasedNode):
+            parent_path = self.parent().path()
+            if isinstance(self.parent(), OneNotePage):
+                return parent_path + " - " + self.name()
+            elif isinstance(self.parent(), OneNoteSection):
+                return os.path.join(parent_path, self.name())
+            else:
+                raise Exception(f'Unexpected parent type: {type(self.parent())}')
+        else:
+            raise Exception(f'Unexpected parent type: {type(self.parent())}')
 
     def index(self) -> int:
         return self._index
@@ -141,11 +150,27 @@ class OneNotePage(OneNoteElementBasedNode):
     def __init__(self, element: ElementTree, parent: OneNoteNode, index: int, app: win32.CDispatch = None):
         super().__init__(element, parent, index, app)
 
+    def is_subpage(self) -> bool:
+        return 'isSubPage' in self._element.attrib and self._element.attrib['isSubPage'] == 'true'
+
     def export_docx(self, path: str):
         self._app.Publish(self.node_id(), path, win32.constants.pfWord, "")
 
     def export_pdf(self, path: str):
         self._app.Publish(self.node_id(), path, 3, "")
+
+    def get_subpages(self) -> list['OneNotePage']:
+        if self.is_subpage():
+            return []
+        else:
+            parents_children = sorted(self.parent().get_children(), key=lambda x: x.index())
+            parents_children_after_me = [x for x in parents_children if x.index() > self.index()]
+            sibling_subpages_before_next_non_subpage = takewhile(lambda x: x.is_subpage(), parents_children_after_me)
+            for subpage in sibling_subpages_before_next_non_subpage:
+                if isinstance(subpage, OneNotePage):
+                    yield subpage
+                else:
+                    raise Exception(f'Unexpected child type: {type(subpage)}')
 
 
 OneNoteElementBasedNode.register(OneNotePage)
@@ -157,7 +182,7 @@ class OneNoteSection(OneNoteElementBasedNode):
 
     def get_pages(self) -> list[OneNotePage]:
         for child in self.get_children():
-            if isinstance(child, OneNotePage):
+            if isinstance(child, OneNotePage) and not child.is_subpage():
                 yield child
             else:
                 raise Exception(f'Unexpected child type: {type(child)}')
@@ -282,17 +307,17 @@ def fix_image_names(md_path, image_names):
 
 
 def handle_page_node(page: OneNotePage):
-    index_prefixed_page_name = "%s_%s" % (str(page.index()).zfill(3), page.name())
-    index_infixed_page_path = os.path.join(page.parent().path(), index_prefixed_page_name)
+    page_name = page.name()
+    page_path = page.path()
 
-    if not should_handle(index_infixed_page_path):
+    if not should_handle(page_path):
         return
 
     output_folder_path = os.path.join(OUTPUT_DIR, page.parent().path())
 
     os.makedirs(output_folder_path, exist_ok=True)
     path_assets = os.path.join(output_folder_path, ASSETS_DIR)
-    output_file_path_without_suffix = os.path.join(output_folder_path, index_prefixed_page_name)
+    output_file_path_without_suffix = os.path.join(output_folder_path, page_name)
     path_docx = output_file_path_without_suffix + '.docx'
     path_pdf = output_file_path_without_suffix + '.pdf'
     path_md = output_file_path_without_suffix + '.md'
@@ -313,12 +338,12 @@ def handle_page_node(page: OneNotePage):
         page.export_pdf(path_pdf)
         # Output picture assets to folder
         log("✂️️ Extracting PDF pictures: '%s'" % path_pdf)
-        image_names = extract_pdf_pictures(path_pdf, path_assets, index_prefixed_page_name)
+        image_names = extract_pdf_pictures(path_pdf, path_assets, page_name)
         # Replace image names in markdown file
         log("📝️️ Updating image references in markdown: '%s'" % path_md)
         fix_image_names(path_md, image_names)
     except pywintypes.com_error as e:
-        log("!!WARNING!! Page Failed: '%s'" % path_md)
+        log("⚠️ !!WARNING!! Page Failed: '%s'" % path_md)
     # Clean up docx, html
     if os.path.exists(path_docx):
         log("🧹 Cleaning up DOCX: '%s'" % path_docx)
@@ -328,39 +353,30 @@ def handle_page_node(page: OneNotePage):
         os.remove(path_pdf)
 
 
-def handle_section_node(section: OneNoteSection):
-    for child_page in section.get_pages():
-        handle_node(child_page)
-
-
-def handle_section_group_node(section_group: OneNoteSectionGroup):
-    for child_section_group in section_group.get_section_groups():
-        handle_node(child_section_group)
-
-    for child_section in section_group.get_sections():
-        handle_node(child_section)
-
-
-def handle_notebook_node(notebook: OneNoteNotebook):
-    for child in notebook.get_children():
-        handle_node(child)
-
-
 def handle_node(node: OneNoteNode):
     if isinstance(node, OneNoteApplication):
         for child in node.get_notebooks():
             handle_node(child)
+        for child in node.get_unfiled_notes():
+            handle_node(child)
+    if isinstance(node, OneNoteUnfiledNotes):
+        for child in node.get_children():
+            handle_node(child)
     elif isinstance(node, OneNoteNotebook):
-        handle_notebook_node(node)
+        for child in node.get_children():
+            handle_node(child)
     elif isinstance(node, OneNoteSectionGroup):
-        handle_section_group_node(node)
+        for child in node.get_section_groups():
+            handle_node(child)
+        for child in node.get_sections():
+            handle_node(child)
     elif isinstance(node, OneNoteSection):
-        handle_section_node(node)
+        for child in node.get_pages():
+            handle_node(child)
     elif isinstance(node, OneNotePage):
-        # try:
-            handle_page_node(node)
-        # except:
-        #     print("Page failed unexpectedly: %s" % node, file=sys.stderr)
+        handle_page_node(node)
+        for child in node.get_subpages():
+            handle_node(child)
     else:
         raise Exception("Unknown node type: %s" % type(node))
 
