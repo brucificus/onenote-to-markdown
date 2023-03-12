@@ -18,6 +18,9 @@ class OneNotePage(OneNoteElementBasedNode):
     def export_pdf(self, path: str):
         self._app.Publish(self.node_id(), path, 3, "")
 
+    def get_children(self) -> list['OneNoteNode']:
+        return self.get_subpages()
+
     def get_subpages(self) -> list['OneNotePage']:
         if self.is_subpage():
             return []

@@ -2,6 +2,7 @@ import traceback
 import pywintypes
 from abc import ABC, abstractmethod
 from logging import info as log
+from typing import Callable
 from win32com import client as win32
 from xml.etree import ElementTree
 
@@ -23,6 +24,9 @@ class OneNoteNode(ABC):
         except pywintypes.com_error as e:
             traceback.print_exc()
             log("❗!!Error!!❗ Hint: Make sure OneNote is open first.")
+
+    def accept(self, visitor: Callable[['OneNoteNode'], None]):
+        visitor(self)
 
     def _get_hierarchy(self, node_id: str, scope: HierarchyScope) -> ElementTree:
         return ElementTree.fromstring(self._app.GetHierarchy(node_id, scope.value, ""))
