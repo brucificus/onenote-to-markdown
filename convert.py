@@ -1,270 +1,27 @@
-import os
-import shutil
-from abc import ABC, abstractmethod
-from enum import Enum
-from itertools import takewhile
-
 import fitz
-import win32com.client as win32
+import os
 import pywintypes
 import re
+import shutil
 import traceback
-from xml.etree import ElementTree
+from logging import info as log
+import logging
+from onenote import *
+
 
 OUTPUT_DIR = os.path.join(os.path.expanduser('~'), "Desktop", "OneNoteExport")
 ASSETS_DIR = "assets"
 PROCESS_RECYCLE_BIN = False
 LOGFILE = 'onenote_to_markdown.log' # Set to None to disable logging
+logging.basicConfig(level=logging.INFO)
+if LOGFILE:
+    logging.Logger.addHandler = logging.FileHandler(LOGFILE)
 # For debugging purposes, set this variable to limit which pages are exported:
 LIMIT_EXPORT = r'' # example: YourNotebook\Notes limits it to the Notes tab/page
 
 
-def log(message):
-    print(message)
-    if LOGFILE is not None:
-        with open(LOGFILE, 'a', encoding='UTF-8') as lf:
-            lf.write(f'{message}\n')
-
-def safe_str(name):
-    return re.sub(r"[/\\?%*:|\"<>\x7F\x00-\x1F]", "-", name)
-
 def should_handle(path):
     return path.startswith(LIMIT_EXPORT)
-
-
-class HierarchyScope(Enum):
-    Self: int = 0
-    '''Gets just the start node specified and no descendants.'''
-
-    Children: int = 1
-    '''Gets the immediate child nodes of the start node, and no descendants in higher or lower subsection groups.'''
-
-    Notebooks: int = 2
-    '''Gets all notebooks below the start node, or root.'''
-
-    Sections: int = 3
-    '''Gets all sections below the start node, including sections in section groups and subsection groups.'''
-
-    Pages: int = 4
-    '''Gets all pages below the start node, including all pages in section groups and subsection groups.'''
-
-
-class OneNoteNode(ABC):
-    def __init__(self, app: win32.CDispatch = None):
-        self._app = app if app is not None else self._create_onenote_com_object()
-
-    @abstractmethod
-    def node_id(self) -> str:
-        pass
-
-    def _create_onenote_com_object(self) -> win32.CDispatch:
-        try:
-            return win32.gencache.EnsureDispatch("OneNote.Application.12")
-        except pywintypes.com_error as e:
-            traceback.print_exc()
-            log("!!!Error!!! Hint: Make sure OneNote is open first.")
-
-    def __get_hierarchy(self, node_id: str, scope: HierarchyScope) -> ElementTree:
-        return ElementTree.fromstring(self._app.GetHierarchy(node_id, scope.value, ""))
-
-    def _get_children_xml(self) -> ElementTree:
-        return self.__get_hierarchy(self.node_id(), HierarchyScope.Children)
-
-    def _get_pages_xml(self) -> ElementTree:
-        return self.__get_hierarchy(self.node_id(), HierarchyScope.Pages)
-
-    def _get_notebooks_xml(self) -> ElementTree:
-        return self.__get_hierarchy(self.node_id(), HierarchyScope.Notebooks)
-
-    def _get_sections_xml(self) -> ElementTree:
-        return self.__get_hierarchy(self.node_id(), HierarchyScope.Sections)
-
-    def _produce_child_node(self, element: ElementTree, index: int) -> 'OneNoteElementBasedNode':
-        if element.tag.endswith('Notebook'):
-            return OneNoteNotebook(element, self, index, self._app)
-        elif element.tag.endswith('Section'):
-            return OneNoteSection(element, self, index, self._app)
-        elif element.tag.endswith('SectionGroup'):
-            return OneNoteSectionGroup(element, self, index, self._app)
-        elif element.tag.endswith('Page'):
-            return OneNotePage(element, self, index, self._app)
-        elif element.tag.endswith('UnfiledNotes'):
-            return OneNoteUnfiledNotes(element, self, index, self._app)
-        else:
-            raise Exception(f'Unexpected element type: {element.tag}')
-
-    def get_children(self) -> list['OneNoteElementBasedNode']:
-        for i, child_element in enumerate(self._get_children_xml()):
-            child = self._produce_child_node(child_element, i)
-            if isinstance(child, OneNoteElementBasedNode):
-                yield child
-            else:
-                raise Exception(f'Unexpected child type: {child_element.tag}')
-
-
-class OneNoteElementBasedNode(OneNoteNode):
-    def __init__(self, element: ElementTree, parent: OneNoteNode, index: int, app: win32.CDispatch = None):
-        super().__init__(app)
-        self._element = element
-        self._parent = parent
-        self._index = index
-
-    def node_id(self) -> str:
-        return self._element.attrib['ID']
-
-    def parent(self) -> OneNoteNode:
-        return self._parent
-
-    @staticmethod
-    def _safe_str(value: str) -> str:
-        return re.sub(r'[^.a-zA-Z0-9一-鿆ぁ-んァ-ヾㄱ-힝々א-ת\s]', '_', value)
-
-    def name(self) -> str:
-        if os.path.supports_unicode_filenames:
-            return self._element.attrib['name']
-        else:
-            return self._safe_str(self._element.attrib['name'])
-
-    def path(self) -> str:
-        if self.parent() is not None:
-            return self.name()
-        elif isinstance(self.parent(), OneNoteElementBasedNode):
-            parent_path = self.parent().path()
-            if isinstance(self.parent(), OneNotePage):
-                return parent_path + " - " + self.name()
-            elif isinstance(self.parent(), OneNoteSection):
-                return os.path.join(parent_path, self.name())
-            else:
-                raise Exception(f'Unexpected parent type: {type(self.parent())}')
-        else:
-            raise Exception(f'Unexpected parent type: {type(self.parent())}')
-
-    def index(self) -> int:
-        return self._index
-
-
-OneNoteNode.register(OneNoteElementBasedNode)
-
-
-class OneNotePage(OneNoteElementBasedNode):
-    def __init__(self, element: ElementTree, parent: OneNoteNode, index: int, app: win32.CDispatch = None):
-        super().__init__(element, parent, index, app)
-
-    def is_subpage(self) -> bool:
-        return 'isSubPage' in self._element.attrib and self._element.attrib['isSubPage'] == 'true'
-
-    def export_docx(self, path: str):
-        self._app.Publish(self.node_id(), path, win32.constants.pfWord, "")
-
-    def export_pdf(self, path: str):
-        self._app.Publish(self.node_id(), path, 3, "")
-
-    def get_subpages(self) -> list['OneNotePage']:
-        if self.is_subpage():
-            return []
-        else:
-            parents_children = sorted(self.parent().get_children(), key=lambda x: x.index())
-            parents_children_after_me = [x for x in parents_children if x.index() > self.index()]
-            sibling_subpages_before_next_non_subpage = takewhile(lambda x: x.is_subpage(), parents_children_after_me)
-            for subpage in sibling_subpages_before_next_non_subpage:
-                if isinstance(subpage, OneNotePage):
-                    yield subpage
-                else:
-                    raise Exception(f'Unexpected child type: {type(subpage)}')
-
-
-OneNoteElementBasedNode.register(OneNotePage)
-
-
-class OneNoteSection(OneNoteElementBasedNode):
-    def __init__(self, element: ElementTree, parent: OneNoteNode, index: int, app: win32.CDispatch = None):
-        super().__init__(element, parent, index, app)
-
-    def get_pages(self) -> list[OneNotePage]:
-        for child in self.get_children():
-            if isinstance(child, OneNotePage) and not child.is_subpage():
-                yield child
-            else:
-                raise Exception(f'Unexpected child type: {type(child)}')
-
-
-OneNoteElementBasedNode.register(OneNoteSection)
-
-
-class OneNoteUnfiledNotes(OneNoteElementBasedNode):
-    def __init__(self, element: ElementTree, parent: OneNoteNode, index: int, app: win32.CDispatch = None):
-        super().__init__(element, parent, index, app)
-
-    def get_pages(self) -> list[OneNotePage]:
-        for child in self.get_children():
-            if isinstance(child, OneNotePage):
-                yield child
-            else:
-                raise Exception(f'Unexpected child type: {type(child)}')
-
-
-OneNoteElementBasedNode.register(OneNoteSection)
-
-
-class OneNoteSectionGroup(OneNoteElementBasedNode):
-    def __init__(self, element: ElementTree, parent: OneNoteNode, index: int, app: win32.CDispatch = None):
-        super().__init__(element, parent, index, app)
-
-    def get_section_groups(self) -> list['OneNoteSectionGroup']:
-        for child in self.get_children():
-            if isinstance(child, OneNoteSectionGroup):
-                yield child
-            elif isinstance(child, OneNoteSection):
-                pass
-            else:
-                raise Exception(f'Unexpected child type: {type(child)}')
-
-    def get_sections(self) -> list[OneNoteSection]:
-        for child in self.get_children():
-            if isinstance(child, OneNoteSection):
-                yield child
-            elif isinstance(child, OneNoteSectionGroup):
-                pass
-            else:
-                raise Exception(f'Unexpected child type: {type(child)}')
-
-
-OneNoteElementBasedNode.register(OneNoteSectionGroup)
-
-
-class OneNoteNotebook(OneNoteElementBasedNode):
-    def __init__(self, element: ElementTree, parent: OneNoteNode, index: int, app: win32.CDispatch = None):
-        super().__init__(element, parent, index, app)
-
-
-OneNoteElementBasedNode.register(OneNoteNotebook)
-
-
-class OneNoteApplication(OneNoteNode):
-    def node_id(self) -> str:
-        return ""
-
-    def get_notebooks(self) -> list[OneNoteNotebook]:
-        for child in self.get_children():
-            if isinstance(child, OneNoteNotebook):
-                yield child
-            elif isinstance(child, OneNoteUnfiledNotes):
-                pass
-            else:
-                raise Exception(f'Unexpected child type: {type(child)}')
-
-    def get_unfiled_notes(self) -> OneNoteUnfiledNotes:
-        for child in self.get_children():
-            if isinstance(child, OneNoteUnfiledNotes):
-                return child
-            elif isinstance(child, OneNoteNotebook):
-                pass
-            else:
-                raise Exception(f'Unexpected child type: {type(child)}')
-        return None
-
-
-OneNoteNode.register(OneNoteApplication)
 
 
 def extract_pdf_pictures(pdf_path, assets_path, page_name):
