@@ -1,4 +1,4 @@
-from typing import overload
+from typing import overload, Callable
 
 from .OneNoteNodeAbstractVisitor import OneNoteNodeAbstractVisitor
 from .OneNoteNode import OneNoteNode
@@ -11,6 +11,9 @@ from .OneNoteUnfiledNotes import OneNoteUnfiledNotes
 
 
 class OneNoteNodeVisitorBase(OneNoteNodeAbstractVisitor):
+    def __init__(self, should_visit: Callable[[OneNoteNode], bool] = lambda node: True):
+        self._should_visit = should_visit
+
     def visit_application(self, node: OneNoteApplication):
         pass
 
@@ -30,6 +33,9 @@ class OneNoteNodeVisitorBase(OneNoteNodeAbstractVisitor):
         pass
 
     def visit(self, node: OneNoteNode):
+        if not self._should_visit(node):
+            return
+
         if isinstance(node, OneNoteApplication):
             self.visit_application(node)
         elif isinstance(node, OneNoteNotebook):

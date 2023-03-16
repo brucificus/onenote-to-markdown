@@ -1,14 +1,16 @@
-from typing import overload
-
 import fitz
 import os
+import pathlib
 import pywintypes
 import re
 import shutil
 import traceback
-from logging import info as log
 import logging
+from logging import info as log
+from typing import Callable, Optional
+
 from onenote import *
+from path_scrubbing import *
 
 
 OUTPUT_DIR = os.path.join(os.path.expanduser('~'), "Desktop", "OneNoteExport")
@@ -19,11 +21,17 @@ logging.basicConfig(level=logging.INFO)
 if LOGFILE:
     logging.Logger.addHandler = logging.FileHandler(LOGFILE)
 # For debugging purposes, set this variable to limit which pages are exported:
-LIMIT_EXPORT = r'' # example: YourNotebook\Notes limits it to the Notes tab/page
+EXPORT_EXCLUSION_FILTER = r''
 
 
-def should_handle(path):
-    return path.startswith(LIMIT_EXPORT)
+def should_handle(node: OneNoteNode) -> bool:
+    if not EXPORT_EXCLUSION_FILTER or len(EXPORT_EXCLUSION_FILTER) == 0:
+        return True
+    if isinstance(node, OneNoteElementBasedNode):
+        path_as_lines = os.linesep.join(node.path)
+        search_result = re.findall(pattern=EXPORT_EXCLUSION_FILTER, string=path_as_lines, flags= re.IGNORECASE | re.MULTILINE)
+        return not search_result or len(search_result) == 0
+    return True
 
 
 def extract_pdf_pictures(pdf_path, assets_path, page_name):
@@ -40,7 +48,7 @@ def extract_pdf_pictures(pdf_path, assets_path, page_name):
             pix = fitz.Pixmap(doc, xref)
             png_name = "%s_%s.png" % (page_name, str(img_num).zfill(3))
             png_path = os.path.join(assets_path, png_name)
-            log("Writing png: %s" % png_path)
+            log("🖼️ Writing png: %s" % png_path)
             if pix.n < 5:
                 pix.save(png_path)
             else:
@@ -66,19 +74,56 @@ def fix_image_names(md_path, image_names):
 
 
 class OneNoteNodeConversionVisitor(OneNoteNodeVisitorBase):
+    def __init__(self, output_dir: str = OUTPUT_DIR, should_visit: Callable[[OneNoteNode], bool] = lambda node: True):
+        super().__init__(should_visit=should_visit)
+        self._current_output_folder = [pathlib.Path(output_dir)]
+        self._path_component_scrubber = PathComponentScrubber()
+
+    def _get_working_folder_change(self, node: OneNoteNode) -> Optional[pathlib.Path]:
+        if isinstance(node, OneNoteElementBasedNode) and not isinstance(node, OneNotePage):
+            return self._current_output_folder[0] / self._path_component_scrubber.cleanup_path_component(node.name)
+        else:
+            return None
+
+    def _invoke_with_working_folder_change(self, new_working_folder: Optional[pathlib.Path], func: Callable):
+        if new_working_folder:
+            os.makedirs(new_working_folder, exist_ok=True)
+            self._current_output_folder.insert(0, new_working_folder)
+        try:
+            func()
+        finally:
+            if new_working_folder:
+                self._current_output_folder.pop(0)
+
+    def visit_children(self, node: OneNoteNode):
+        new_working_folder = self._get_working_folder_change(node)
+        self._invoke_with_working_folder_change(new_working_folder, lambda: super(OneNoteNodeConversionVisitor, self).visit_children(node))
+
+    def visit_application(self, node: OneNoteApplication):
+        log('🪟 Found OneNote Application')
+
+    def visit_unfiled_notes(self, node: OneNoteUnfiledNotes):
+        log('📂 Found Unfiled Notes')
+
+    def visit_notebook(self, node: OneNoteNotebook):
+        log('📒 Found Notebook: %s' % node.name)
+
+    def visit_section(self, node: OneNoteSection):
+        log('📑 Found Section: %s' % node.name)
+
+    def visit_section_group(self, node: OneNoteSectionGroup):
+        log('📑 Found Section Group: %s' % node.name)
+
     def visit_page(self, node: OneNotePage):
+        log('🗒️ Found Page: %s' % node.name)
+
         page = node
-        page_name = page.name()
-        page_path = page.path()
+        safe_page_name = self._path_component_scrubber.cleanup_path_component(page.name)
 
-        if not should_handle(page_path):
-            return
+        output_folder_path = str(self._current_output_folder[0])
 
-        output_folder_path = os.path.join(OUTPUT_DIR, page.parent().path())
-
-        os.makedirs(output_folder_path, exist_ok=True)
         path_assets = os.path.join(output_folder_path, ASSETS_DIR)
-        output_file_path_without_suffix = os.path.join(output_folder_path, page_name)
+        output_file_path_without_suffix = os.path.join(output_folder_path, safe_page_name)
         path_docx = output_file_path_without_suffix + '.docx'
         path_pdf = output_file_path_without_suffix + '.pdf'
         path_md = output_file_path_without_suffix + '.md'
@@ -101,7 +146,7 @@ class OneNoteNodeConversionVisitor(OneNoteNodeVisitorBase):
             page.export_pdf(path_pdf)
             # Output picture assets to folder
             log("✂️️ Extracting PDF pictures: '%s'" % path_pdf)
-            image_names = extract_pdf_pictures(path_pdf, path_assets, page_name)
+            image_names = extract_pdf_pictures(path_pdf, path_assets, safe_page_name)
             # Replace image names in markdown file
             log("📝️️ Updating image references in markdown: '%s'" % path_md)
             fix_image_names(path_md, image_names)
@@ -122,7 +167,7 @@ OneNoteNodeVisitorBase.register(OneNoteNodeConversionVisitor)
 if __name__ == "__main__":
     try:
         onenote = OneNoteApplication()
-        visitor = OneNoteNodeConversionVisitor()
+        visitor = OneNoteNodeConversionVisitor(should_visit=should_handle)
         onenote.accept(visitor)
 
     except pywintypes.com_error as e:

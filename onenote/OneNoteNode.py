@@ -13,6 +13,7 @@ class OneNoteNode(ABC):
     def __init__(self, app: win32.CDispatch = None):
         self._app = app if app is not None else self._create_onenote_com_object()
 
+    @property
     @abstractmethod
     def node_id(self) -> str:
         pass
@@ -32,16 +33,16 @@ class OneNoteNode(ABC):
         return ElementTree.fromstring(self._app.GetHierarchy(node_id, scope.value, ""))
 
     def _get_children_xml(self) -> ElementTree:
-        return self._get_hierarchy(self.node_id(), HierarchyScope.Children)
+        return self._get_hierarchy(self.node_id, HierarchyScope.Children)
 
     def _get_pages_xml(self) -> ElementTree:
-        return self._get_hierarchy(self.node_id(), HierarchyScope.Pages)
+        return self._get_hierarchy(self.node_id, HierarchyScope.Pages)
 
     def _get_notebooks_xml(self) -> ElementTree:
-        return self._get_hierarchy(self.node_id(), HierarchyScope.Notebooks)
+        return self._get_hierarchy(self.node_id, HierarchyScope.Notebooks)
 
     def _get_sections_xml(self) -> ElementTree:
-        return self._get_hierarchy(self.node_id(), HierarchyScope.Sections)
+        return self._get_hierarchy(self.node_id, HierarchyScope.Sections)
 
     def _produce_child_node(self, element: ElementTree, index: int) -> 'OneNoteNode':
         from onenote.OneNoteNodeFactory import create_onenote_node_from_xml_element
