@@ -1,2 +1,4 @@
 pywin32
 pymupdf
+pylint
+pytest
