@@ -32,13 +32,13 @@ class OneNoteElementBasedNode(OneNoteNode):
 
     @property
     @cache
-    def path(self) -> tuple[str, ...]:
+    def route(self) -> tuple[str, ...]:
         parent = self.parent
-        self_path_part = (self.name,)
+        self_route_part = (self.name,)
         if self.parent is None:
-            return self_path_part
-        elif hasattr(parent, 'path'):
-            return parent.path + self_path_part
+            return self_route_part
+        elif hasattr(parent, 'route'):
+            return parent.route + self_route_part
         elif isinstance(parent, OneNoteApplication):
             return self_path_part
         else:

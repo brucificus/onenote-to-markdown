@@ -1,3 +1,5 @@
+from datetime import datetime
+from functools import cache
 from win32com import client as win32
 from xml.etree import ElementTree
 
@@ -16,6 +18,31 @@ class OneNoteSection(OneNoteElementBasedNode):
                 yield child
             else:
                 raise Exception(f'Unexpected child type: {type(child)}')
+
+    @property
+    @cache
+    def path(self) -> str:
+        return self._element.attrib['path']
+
+    @property
+    @cache
+    def modified_at(self) -> datetime:
+        return datetime.fromisoformat(self._element.attrib['lastModifiedTime'])
+
+    @property
+    @cache
+    def is_readonly(self) -> bool:
+        return self._element.attrib['readOnly'] == 'true'
+
+    @property
+    @cache
+    def is_encrypted(self) -> bool:
+        return 'encrypted' in self._element.attrib and self._element.attrib['encrypted'] == 'true'
+
+    @property
+    @cache
+    def is_locked(self) -> bool:
+        return 'locked' in self._element.attrib and self._element.attrib['locked'] == 'true'
 
 
 OneNoteElementBasedNode.register(OneNoteSection)
