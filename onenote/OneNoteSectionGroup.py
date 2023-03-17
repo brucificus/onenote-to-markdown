@@ -19,7 +19,7 @@ class OneNoteSectionGroup(OneNoteElementBasedNode):
             elif isinstance(child, OneNoteSection):
                 pass
             else:
-                raise Exception(f'Unexpected child type: {type(child)}')
+                raise ValueError(f'Unexpected child type: {type(child)}')
 
     def get_sections(self) -> list[OneNoteSection]:
         for child in self.get_children():
@@ -28,7 +28,7 @@ class OneNoteSectionGroup(OneNoteElementBasedNode):
             elif isinstance(child, OneNoteSectionGroup):
                 pass
             else:
-                raise Exception(f'Unexpected child type: {type(child)}')
+                raise ValueError(f'Unexpected child type: {type(child)}')
 
     @property
     @cache

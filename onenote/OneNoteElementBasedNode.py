@@ -1,11 +1,7 @@
-import os
-import re
 from functools import cache
-
 from win32com import client as win32
 from xml.etree import ElementTree
 
-from . import OneNoteApplication
 from .OneNoteNode import OneNoteNode
 
 
@@ -37,12 +33,12 @@ class OneNoteElementBasedNode(OneNoteNode):
         self_route_part = (self.name,)
         if self.parent is None:
             return self_route_part
-        elif hasattr(parent, 'route'):
+        if hasattr(parent, 'route'):
             return parent.route + self_route_part
-        elif isinstance(parent, OneNoteApplication):
-            return self_path_part
-        else:
-            raise Exception(f'Unexpected parent type: {type(self.parent)}')
+        from .OneNoteApplication import OneNoteApplication
+        if isinstance(parent, OneNoteApplication):
+            return self_route_part
+        raise Exception(f'Unexpected parent type: {type(self.parent)}')
 
     @property
     def index(self) -> int:

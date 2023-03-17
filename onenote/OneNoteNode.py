@@ -25,6 +25,7 @@ class OneNoteNode(ABC):
         except pywintypes.com_error as e:
             traceback.print_exc()
             log("❗!!Error!!❗ Hint: Make sure OneNote is open first.")
+            raise e
 
     def accept(self, visitor: Callable[['OneNoteNode'], None]):
         visitor(self)

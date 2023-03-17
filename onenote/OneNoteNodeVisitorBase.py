@@ -1,4 +1,4 @@
-from typing import overload, Callable
+from typing import Callable
 
 from .OneNoteNodeAbstractVisitor import OneNoteNodeAbstractVisitor
 from .OneNoteNode import OneNoteNode
@@ -49,7 +49,7 @@ class OneNoteNodeVisitorBase(OneNoteNodeAbstractVisitor):
         elif isinstance(node, OneNoteUnfiledNotes):
             self.visit_unfiled_notes(node)
         else:
-            raise Exception(f'Unexpected node type: {type(node)}')
+            raise ValueError(f'Unexpected node type: {type(node)}')
 
         self.visit_children(node)
 
