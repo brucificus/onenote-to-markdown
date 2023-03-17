@@ -10,7 +10,7 @@ from .TimeDigitsSubstitutionFactory import TimeDigitsSubstitutionFactory
 from .os_paths_support import os_paths_support_character
 
 
-class PathComponentScrubber:
+class PathComponentScrubber(Callable[[str], pathlib.Path]):
     def __init__(self):
         self._prefer_zettelkasten_style_timestamp_infixes: bool = True
         self._abbrev_year_prefix: Optional[AbbrevYearPrefix] = AbbrevYearPrefix.TWENTY
@@ -128,6 +128,9 @@ class PathComponentScrubber:
     @cache
     def _path_cleanup_substitutions(self) -> Tuple[Callable[[str], str], ...]:
         return tuple(self._yield_path_cleanup_substitutions())
+
+    def __call__(self, *args, **kwargs):
+        return self.cleanup_path_component(*args, **kwargs)
 
     def cleanup_path_component(self, path: str) -> pathlib.Path:
         cleaned_path_text = reduce(
