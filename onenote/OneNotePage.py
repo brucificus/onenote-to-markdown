@@ -1,3 +1,4 @@
+from datetime import datetime
 from functools import cache
 from itertools import takewhile
 from win32com import client as win32
@@ -38,6 +39,21 @@ class OneNotePage(OneNoteElementBasedNode):
                     yield subpage
                 else:
                     raise Exception(f'Unexpected child type: {type(subpage)}')
+
+    @property
+    @cache
+    def path(self) -> str:
+        return self._element.attrib['path']
+
+    @property
+    @cache
+    def created_at(self) -> datetime:
+        return datetime.fromisoformat(self._element.attrib['dateTime'])
+
+    @property
+    @cache
+    def modified_at(self) -> datetime:
+        return datetime.fromisoformat(self._element.attrib['lastModifiedTime'])
 
 
 OneNoteElementBasedNode.register(OneNotePage)

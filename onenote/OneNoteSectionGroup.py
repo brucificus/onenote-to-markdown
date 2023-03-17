@@ -1,3 +1,5 @@
+from datetime import datetime
+from functools import cache
 from win32com import client as win32
 from xml.etree import ElementTree
 
@@ -27,6 +29,16 @@ class OneNoteSectionGroup(OneNoteElementBasedNode):
                 pass
             else:
                 raise Exception(f'Unexpected child type: {type(child)}')
+
+    @property
+    @cache
+    def path(self) -> str:
+        return self._element.attrib['path']
+
+    @property
+    @cache
+    def modified_at(self) -> datetime:
+        return datetime.fromisoformat(self._element.attrib['lastModifiedTime'])
 
 
 OneNoteElementBasedNode.register(OneNoteSectionGroup)

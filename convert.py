@@ -29,8 +29,8 @@ def should_handle(node: OneNoteNode) -> bool:
     if not EXPORT_EXCLUSION_FILTER or len(EXPORT_EXCLUSION_FILTER) == 0:
         return True
     if isinstance(node, OneNoteElementBasedNode):
-        path_as_lines = os.linesep.join(node.path)
-        search_result = re.findall(pattern=EXPORT_EXCLUSION_FILTER, string=path_as_lines, flags= re.IGNORECASE | re.MULTILINE)
+        route_as_lines = os.linesep.join(node.route)
+        search_result = re.findall(pattern=EXPORT_EXCLUSION_FILTER, string=route_as_lines, flags= re.IGNORECASE | re.MULTILINE)
         return not search_result or len(search_result) == 0
     return True
 
