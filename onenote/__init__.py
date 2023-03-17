@@ -1,7 +1,6 @@
 from .OneNoteApplication import OneNoteApplication
 from .OneNoteElementBasedNode import OneNoteElementBasedNode
 from .OneNoteNode import OneNoteNode
-from .OneNoteNodeVisitorBase import OneNoteNodeVisitorBase
 from .OneNoteNotebook import OneNoteNotebook
 from .OneNotePage import OneNotePage
 from .OneNoteSection import OneNoteSection

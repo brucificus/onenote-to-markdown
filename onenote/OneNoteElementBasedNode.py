@@ -38,7 +38,7 @@ class OneNoteElementBasedNode(OneNoteNode):
         from .OneNoteApplication import OneNoteApplication
         if isinstance(parent, OneNoteApplication):
             return self_route_part
-        raise Exception(f'Unexpected parent type: {type(self.parent)}')
+        raise ValueError(f'Unexpected parent type: {type(self.parent)}')
 
     @property
     def index(self) -> int:

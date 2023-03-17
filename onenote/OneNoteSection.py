@@ -1,5 +1,6 @@
 from datetime import datetime
 from functools import cache
+from typing import Iterable
 from win32com import client as win32
 from xml.etree import ElementTree
 
@@ -12,12 +13,17 @@ class OneNoteSection(OneNoteElementBasedNode):
     def __init__(self, element: ElementTree, parent: OneNoteNode, index: int, app: win32.CDispatch = None):
         super().__init__(element, parent, index, app)
 
-    def get_pages(self) -> list[OneNotePage]:
-        for child in self.get_children():
+    def _get_non_subpage_pages(self) -> Iterable[OneNotePage]:
+        for child in super().get_children():
             if isinstance(child, OneNotePage) and not child.is_subpage:
                 yield child
+            elif child.is_subpage:
+                continue
             else:
                 raise ValueError(f'Unexpected child type: {type(child)}')
+
+    def get_children(self) -> Iterable[OneNoteNode]:
+        return self._get_non_subpage_pages()
 
     @property
     @cache
