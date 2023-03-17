@@ -18,13 +18,13 @@ class TestPathComponentScrubber(unittest.TestCase):
     ]
 
     def test_path_component_cleanup_returns_expected(self):
-        for input, expected in self.param_list:
-            with self.subTest(input=input, expected=expected):
+        for input_path_component, expected in self.param_list:
+            with self.subTest(input_path_component=input_path_component, expected=expected):
                 # Arrange
                 subject = PathComponentScrubber()
 
                 # Act
-                actual = subject.cleanup_path_component(input).name
+                actual = subject.cleanup_path_component(input_path_component).name
 
                 # Assert
                 self.assertEqual(actual, expected)

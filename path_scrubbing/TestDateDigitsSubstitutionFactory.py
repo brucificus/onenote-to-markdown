@@ -5,42 +5,42 @@ from .DateDigitsSubstitutionFactory import DateDigitsSubstitutionFactory
 
 class TestDateDigitsSubstitutionFactory(unittest.TestCase):
     param_list = [
-        dict(
-            old_sep='/',
-            new_sep='-',
-            abbrev_year=False,
-            input_date_component_order='mdy',
-            input='01/02/2023',
-            output_date_component_order='ymd',
-            expected='2023-01-02'
-        ),
-        dict(
-            old_sep='_',
-            new_sep='-',
-            abbrev_year=False,
-            input_date_component_order='mdy',
-            input='01_02_2023',
-            output_date_component_order='ymd',
-            expected='2023-01-02'
-        ),
-        dict(
-            old_sep='-',
-            new_sep='-',
-            abbrev_year=False,
-            input_date_component_order='ymd',
-            input='2017-7-11',
-            output_date_component_order='ymd',
-            expected='2017-07-11'
-        ),
-        dict(
-            old_sep='/',
-            new_sep='-',
-            abbrev_year=False,
-            input_date_component_order='mdy',
-            input='7/11/2017',
-            output_date_component_order='ymd',
-            expected='2017-07-11'
-        )
+        {
+            "old_sep": '/',
+            "new_sep": '-',
+            "abbrev_year": False,
+            "input_date_component_order": 'mdy',
+            "input_path_component": '01/02/2023',
+            "output_date_component_order": 'ymd',
+            "expected": '2023-01-02',
+        },
+        {
+            "old_sep": '_',
+            "new_sep": '-',
+            "abbrev_year": False,
+            "input_date_component_order": 'mdy',
+            "input_path_component": '01_02_2023',
+            "output_date_component_order": 'ymd',
+            "expected": '2023-01-02',
+        },
+        {
+            "old_sep": '-',
+            "new_sep": '-',
+            "abbrev_year": False,
+            "input_date_component_order": 'ymd',
+            "input_path_component": '2017-7-11',
+            "output_date_component_order": 'ymd',
+            "expected": '2017-07-11',
+        },
+        {
+            "old_sep": '/',
+            "new_sep": '-',
+            "abbrev_year": False,
+            "input_date_component_order": 'mdy',
+            "input_path_component": '7/11/2017',
+            "output_date_component_order": 'ymd',
+            "expected": '2017-07-11',
+        },
     ]
 
     def test_given_params_can_create_substitutor_which_returns_expected(self):
@@ -51,7 +51,7 @@ class TestDateDigitsSubstitutionFactory(unittest.TestCase):
                 new_sep = param_set['new_sep']
                 abbrev_year = param_set['abbrev_year']
                 input_date_component_order = param_set['input_date_component_order']
-                input = param_set['input']
+                input_path_component = param_set['input_path_component']
                 output_date_component_order = param_set['output_date_component_order']
                 expected = param_set['expected']
 
@@ -59,7 +59,7 @@ class TestDateDigitsSubstitutionFactory(unittest.TestCase):
                 substitutor = subject.create_substitutor(new_date_components_sep=new_sep, new_date_component_order=output_date_component_order)
 
                 # Act
-                actual = substitutor(input)
+                actual = substitutor(input_path_component)
 
                 # Assert
                 self.assertEqual(expected, actual)

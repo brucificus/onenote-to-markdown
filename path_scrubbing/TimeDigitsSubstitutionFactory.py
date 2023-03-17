@@ -17,13 +17,11 @@ class TimeDigitsSubstitutionFactory:
         if expect_seconds:
             if twelve_hour:
                 return re.compile(r'\b(\d{1,2})' + time_components_sep + r'(\d{2})' + time_components_sep + r'(\d{2})\s+(AM|PM)', re.IGNORECASE)
-            else:
-                return re.compile(r'\b(\d{1,2})' + time_components_sep + r'(\d{2})' + time_components_sep + r'(\d{2})')
-        else:
-            if twelve_hour:
-                return re.compile(r'\b(\d{1,2})' + time_components_sep + r'(\d{2})\s+(AM|PM)', re.IGNORECASE)
-            else:
-                return re.compile(r'\b(\d{1,2})' + time_components_sep + r'(\d{2})')
+            return re.compile(r'\b(\d{1,2})' + time_components_sep + r'(\d{2})' + time_components_sep + r'(\d{2})')
+
+        if twelve_hour:
+            return re.compile(r'\b(\d{1,2})' + time_components_sep + r'(\d{2})\s+(AM|PM)', re.IGNORECASE)
+        return re.compile(r'\b(\d{1,2})' + time_components_sep + r'(\d{2})')
 
     def __str__(self):
         return f'TimeSubstitutionFactory({self._time_components_sep}, {self._expect_seconds}, {self._twelve_hour})'
@@ -49,7 +47,7 @@ class TimeDigitsSubstitutionFactory:
         hour_group = capture_groups_start_at
         minute_group = hour_group + 1
         second_group = minute_group + 1 if self._expect_seconds else None
-        time_parser_kwargs = dict(hour_group=hour_group, minute_group=minute_group, second_group=second_group)
+        time_parser_kwargs = { "hour_group":hour_group, "minute_group":minute_group, "second_group":second_group }
         time_parser: Callable[[Match[str]], time]
         if self._twelve_hour:
             am_pm_group = second_group + 1 if self._expect_seconds else minute_group + 1

@@ -23,20 +23,19 @@ class DateDigitsSubstitutionFactory:
         year_digits_count = 2 if abbrev_year else 4
         if date_component_order == 'ymd':
             return r'\b(\d{' + str(year_digits_count) + '})' + date_components_sep + r'(\d{1,2})' + date_components_sep + r'(\d{1,2})\b'
-        elif date_component_order == 'dmy':
+        if date_component_order == 'dmy':
             return r'\b(\d{1,2})' + date_components_sep + r'(\d{1,2})' + date_components_sep + r'(\d{' + str(year_digits_count) + r'})\b'
-        elif date_component_order == 'mdy':
+        if date_component_order == 'mdy':
             return r'\b(\d{1,2})' + date_components_sep + r'(\d{1,2})' + date_components_sep + r'(\d{' + str(year_digits_count) + r'})\b'
-        else:
-            raise ValueError(f'Invalid date_component_order: {date_component_order}')
+        raise ValueError(f'Invalid date_component_order: {date_component_order}')
 
     def __str__(self):
         return f'{self.__class__.__name__}({self._pattern})'
 
-    def _parse_from_pattern_match(self, match: Match[str], year_group: int, month_group: int, day_group: int, abbrev_year_prefix: str = '20') -> date:
-        year = int(match.group(year_group))
-        month = int(match.group(month_group))
-        day = int(match.group(day_group))
+    def _parse_from_pattern_match(self, match: Match[str], capture_groups: dict[str, int], abbrev_year_prefix: str = '20') -> date:
+        year = int(match.group(capture_groups['year']))
+        month = int(match.group(capture_groups['month']))
+        day = int(match.group(capture_groups['day']))
 
         if self._abbrev_year and year < 100:
             year = int(abbrev_year_prefix + str(year))
@@ -59,7 +58,8 @@ class DateDigitsSubstitutionFactory:
         else:
             raise ValueError(f'Invalid date_component_order: {self._date_component_order}')
 
-        date_parser_kwargs = dict(year_group=year_group, month_group=month_group, day_group=day_group, abbrev_year_prefix=abbrev_year_prefix)
+        capture_groups = {'year': year_group, 'month': month_group, 'day': day_group}
+        date_parser_kwargs = {"capture_groups": capture_groups, "abbrev_year_prefix": abbrev_year_prefix}
         date_from_pattern_match: Callable[[Match[str]], date]
         date_from_pattern_match = functools.partial(self._parse_from_pattern_match, **date_parser_kwargs)
 

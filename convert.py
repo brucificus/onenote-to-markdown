@@ -1,13 +1,14 @@
-import fitz
+import logging
 import os
 import pathlib
-import pywintypes
 import re
 import shutil
 import traceback
-import logging
 from logging import info as log
 from typing import Callable, Optional
+
+import fitz
+import pywintypes
 
 from onenote import *
 from path_scrubbing import *

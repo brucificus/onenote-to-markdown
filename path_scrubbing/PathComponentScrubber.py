@@ -13,7 +13,7 @@ from .os_paths_support import os_paths_support_character
 class PathComponentScrubber:
     def __init__(self):
         self._prefer_zettelkasten_style_timestamp_infixes: bool = True
-        self._abbrev_year_prefix: Optional[AbbrevYearPrefix] = AbbrevYearPrefix.Twenty
+        self._abbrev_year_prefix: Optional[AbbrevYearPrefix] = AbbrevYearPrefix.TWENTY
         self._reformat_datetimes_separated_by: Tuple[str, ...] = ('_',)
         self._reformat_times_fill_empty_seconds: bool = False
         self._reformat_all_times_coercing_to_24hr_iso8601: bool = True

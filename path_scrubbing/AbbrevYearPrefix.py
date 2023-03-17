@@ -4,5 +4,5 @@ from enum import Enum
 
 @enum.unique
 class AbbrevYearPrefix(str, Enum):
-    Nineteen = '19'
-    Twenty = '20'
+    NINETEEN = '19'
+    TWENTY = '20'
