@@ -25,10 +25,7 @@ class OneNotePage(OneNoteElementBasedNode):
     def export_pdf(self, path: str):
         self._app.Publish(self.node_id, path, 3, "")
 
-    def get_children(self) -> Iterable['OneNoteNode']:
-        return self.get_subpages()
-
-    def get_subpages(self) -> Iterable['OneNotePage']:
+    def _get_subpages(self) -> Iterable['OneNotePage']:
         if self.is_subpage:
             return
 
@@ -40,6 +37,9 @@ class OneNotePage(OneNoteElementBasedNode):
                 yield subpage
             else:
                 raise ValueError(f'Unexpected child type: {type(subpage)}')
+
+    def get_children(self) -> Iterable['OneNoteNode']:
+        return self._get_subpages()
 
     @property
     @cache

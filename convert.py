@@ -1,16 +1,14 @@
 import logging
 import os
 import re
-
 import traceback
 from logging import info as log
-
-
 import pywintypes
 
-from onenote import *
-from onenote_export.OneNoteNodeExportVisitor import OneNoteNodeExportVisitor
+from onenote import OneNoteApplication, OneNoteNode, OneNoteElementBasedNode
+from onenote_export.OneNoteExporter import create_default_onenote_exporter
 from path_scrubbing import PathComponentScrubber
+
 
 OUTPUT_DIR = os.path.join(os.path.expanduser('~'), "Desktop", "OneNoteExport")
 ASSETS_DIR = "assets"
@@ -37,12 +35,13 @@ if __name__ == "__main__":
     try:
         onenote = OneNoteApplication()
         path_scrubber = PathComponentScrubber()
-        exporter = OneNoteNodeExportVisitor(
+        exporter = create_default_onenote_exporter(
             root_output_dir=OUTPUT_DIR,
             page_relative_assets_dir=ASSETS_DIR,
             convert_node_name_to_path_component=path_scrubber,
-            should_visit=should_handle)
-        onenote.accept(exporter)
+            should_export=should_handle
+        )
+        exporter.execute_export(onenote)
 
     except pywintypes.com_error as e:
         traceback.print_exc()

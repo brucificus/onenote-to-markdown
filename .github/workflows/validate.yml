@@ -33,4 +33,4 @@ jobs:
         pytest
     - name: Analysing the code with pylint
       run: |
-        pylint **/*.py --max-line-length 127 --max-args 8 --fail-under 6.42 --recursive true
+        pylint **/*.py --max-line-length 127 --max-args 8 --fail-under 6.57 --recursive true

@@ -1,12 +1,9 @@
 from functools import cache
-
 from win32com import client as win32
 from xml.etree import ElementTree
 
 from .OneNoteElementBasedNode import OneNoteElementBasedNode
 from .OneNoteNode import OneNoteNode
-from .OneNotePage import OneNotePage
-from .OneNoteSection import OneNoteSection
 
 
 class OneNoteUnfiledNotes(OneNoteNode):
@@ -33,20 +30,11 @@ class OneNoteUnfiledNotes(OneNoteNode):
     @property
     @cache
     def path(self) -> tuple[str, ...]:
-        return self.name,
+        return (self.name,)
 
     @property
     def index(self) -> int:
         return self._index
-
-    def get_pages(self) -> list[OneNotePage]:
-        for child in self.get_children():
-            if isinstance(child, OneNotePage):
-                yield child
-            if isinstance(child, OneNoteSection):
-                yield child
-            else:
-                raise Exception(f'Unexpected child type: {type(child)}')
 
 
 OneNoteElementBasedNode.register(OneNoteUnfiledNotes)

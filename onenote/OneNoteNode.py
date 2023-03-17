@@ -46,7 +46,7 @@ class OneNoteNode(ABC):
         return self._get_hierarchy(self.node_id, HierarchyScope.Sections)
 
     def _produce_child_node(self, element: ElementTree, index: int) -> 'OneNoteNode':
-        from onenote.OneNoteNodeFactory import create_onenote_node_from_xml_element
+        from onenote.create_onenote_node import create_onenote_node_from_xml_element
         return create_onenote_node_from_xml_element(element, index, self, self._app)
 
     def get_children(self) -> list['OneNoteNode']:
