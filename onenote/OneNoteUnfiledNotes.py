@@ -6,6 +6,7 @@ from xml.etree import ElementTree
 from .OneNoteElementBasedNode import OneNoteElementBasedNode
 from .OneNoteNode import OneNoteNode
 from .OneNotePage import OneNotePage
+from .OneNoteSection import OneNoteSection
 
 
 class OneNoteUnfiledNotes(OneNoteNode):
@@ -41,6 +42,8 @@ class OneNoteUnfiledNotes(OneNoteNode):
     def get_pages(self) -> list[OneNotePage]:
         for child in self.get_children():
             if isinstance(child, OneNotePage):
+                yield child
+            if isinstance(child, OneNoteSection):
                 yield child
             else:
                 raise Exception(f'Unexpected child type: {type(child)}')
