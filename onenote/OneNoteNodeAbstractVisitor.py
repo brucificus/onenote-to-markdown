@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABC
-from typing import overload, Callable
+from typing import Callable
 
 from .OneNoteNode import OneNoteNode
 

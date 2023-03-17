@@ -7,17 +7,16 @@ def create_onenote_node_from_xml_element(element: ElementTree, index: int, paren
     if element.tag.endswith('Notebook'):
         from .OneNoteNotebook import OneNoteNotebook
         return OneNoteNotebook(element, parent, index, app)
-    elif element.tag.endswith('Section'):
+    if element.tag.endswith('Section'):
         from .OneNoteSection import OneNoteSection
         return OneNoteSection(element, parent, index, app)
-    elif element.tag.endswith('SectionGroup'):
+    if element.tag.endswith('SectionGroup'):
         from .OneNoteSectionGroup import OneNoteSectionGroup
         return OneNoteSectionGroup(element, parent, index, app)
-    elif element.tag.endswith('Page'):
+    if element.tag.endswith('Page'):
         from .OneNotePage import OneNotePage
         return OneNotePage(element, parent, index, app)
-    elif element.tag.endswith('UnfiledNotes'):
+    if element.tag.endswith('UnfiledNotes'):
         from .OneNoteUnfiledNotes import OneNoteUnfiledNotes
         return OneNoteUnfiledNotes(element, parent, index, app)
-    else:
-        raise Exception(f'Unexpected element type: {element.tag}')
+    raise ValueError(f'Unexpected element type: {element.tag}')

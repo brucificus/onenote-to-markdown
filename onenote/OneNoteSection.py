@@ -17,7 +17,7 @@ class OneNoteSection(OneNoteElementBasedNode):
             if isinstance(child, OneNotePage) and not child.is_subpage:
                 yield child
             else:
-                raise Exception(f'Unexpected child type: {type(child)}')
+                raise ValueError(f'Unexpected child type: {type(child)}')
 
     @property
     @cache
