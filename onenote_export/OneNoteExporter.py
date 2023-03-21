@@ -1,4 +1,3 @@
-import functools
 from logging import info as log
 from typing import Callable
 import pathlib
@@ -7,6 +6,7 @@ from onenote import \
     OneNoteApplication,\
     OneNoteNode,\
     OneNoteUnfiledNotes,\
+    OneNoteOpenSections,\
     OneNoteNotebook,\
     OneNotePage,\
     OneNoteSectionGroup,\
@@ -67,6 +67,11 @@ def create_default_onenote_exporter(
             mf.before(lambda context: log('📂 Found Unfiled Notes')),
             mf.preempt(lambda context: log('🚫 Skipping Unfiled Notes'))
         ),
+        OneNoteOpenSections: mf.either_or(
+            lambda context: should_export(context.node),
+            mf.before(lambda context: log(f'📑 Found Open Sections: {context.node.name}')),
+            mf.preempt(lambda context: log(f'🚫 Skipping Open Sections: {context.node.name}'))
+        ),
         OneNoteNotebook: mf.either_or(
             lambda context: should_export(context.node),
             mf.before(lambda context: log(f'📒 Found Notebook: {context.node.name}')),
@@ -101,6 +106,7 @@ def create_default_onenote_exporter(
         middlewares_by_type={
             OneNoteApplication: (head_middlewares_by_type[OneNoteApplication],),
             OneNoteUnfiledNotes: (head_middlewares_by_type[OneNoteUnfiledNotes],),
+            OneNoteOpenSections: (head_middlewares_by_type[OneNoteOpenSections],),
             OneNoteNotebook: (head_middlewares_by_type[OneNoteNotebook],),
             OneNoteSectionGroup: (head_middlewares_by_type[OneNoteSectionGroup],),
             OneNoteSection: (head_middlewares_by_type[OneNoteSection],),

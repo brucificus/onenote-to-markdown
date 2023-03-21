@@ -19,4 +19,7 @@ def create_onenote_node_from_xml_element(element: ElementTree, index: int, paren
     if element.tag.endswith('UnfiledNotes'):
         from .OneNoteUnfiledNotes import OneNoteUnfiledNotes
         return OneNoteUnfiledNotes(element, parent, index, app)
+    if element.tag.endswith('OpenSections'):
+        from .OneNoteOpenSections import OneNoteOpenSections
+        return OneNoteOpenSections(element, parent, index, app)
     raise ValueError(f'Unexpected element type: {element.tag}')

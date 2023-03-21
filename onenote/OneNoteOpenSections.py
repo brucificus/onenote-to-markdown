@@ -6,7 +6,7 @@ from .OneNoteElementBasedNode import OneNoteElementBasedNode
 from .OneNoteNode import OneNoteNode
 
 
-class OneNoteUnfiledNotes(OneNoteNode):
+class OneNoteOpenSections(OneNoteNode):
     def __init__(self, element: ElementTree, parent: OneNoteNode, index: int, app: win32.CDispatch = None):
         super().__init__(app)
         self._element = element
@@ -24,7 +24,7 @@ class OneNoteUnfiledNotes(OneNoteNode):
 
     @property
     def name(self) -> str:
-        return 'Unfiled Notes'
+        return 'Open Sections'
 
     @property
     @cache
@@ -36,4 +36,4 @@ class OneNoteUnfiledNotes(OneNoteNode):
         return self._index
 
 
-OneNoteElementBasedNode.register(OneNoteUnfiledNotes)
+OneNoteElementBasedNode.register(OneNoteOpenSections)
