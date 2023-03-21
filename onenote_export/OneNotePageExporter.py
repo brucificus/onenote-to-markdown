@@ -6,6 +6,7 @@ import re
 import shutil
 from logging import info as log
 from typing import Callable
+import urllib
 
 from onenote import OneNotePage
 from .OneNoteExportMiddleware import OneNoteExportMiddleware
@@ -121,7 +122,7 @@ class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
                     with open(tmp_path, 'w', encoding='utf-8') as f_tmp:
                         body_md = f_md.read()
                         for i, path in enumerate(image_names_to_fix):
-                            path_str_for_sub = str(path).replace("\\", "\\\\")
+                            path_str_for_sub = urllib.parse.quote(str(path).encode('utf8'), safe='\\').replace('\\', '/')
                             body_md = re.sub("media/image" + str(i + 1) + r"\.\w+", path_str_for_sub, body_md)
                         f_tmp.write(body_md)
                 shutil.move(tmp_path, md_path)
