@@ -6,3 +6,4 @@ from .OneNotePage import OneNotePage
 from .OneNoteSection import OneNoteSection
 from .OneNoteSectionGroup import OneNoteSectionGroup
 from .OneNoteUnfiledNotes import OneNoteUnfiledNotes
+from .OneNoteOpenSections import OneNoteOpenSections
