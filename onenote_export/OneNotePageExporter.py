@@ -11,6 +11,7 @@ from onenote import OneNotePage
 from .OneNoteExportMiddleware import OneNoteExportMiddleware
 from .OneNoteExportMiddlewareContext import OneNoteExportMiddlewareContext
 from .OneNoteExportMiddlewarePartial import OneNoteExportMiddlewarePartial
+from .temporary_file import temporary_file_path
 from .type_variables import TReturn, TNode
 
 
@@ -46,46 +47,24 @@ class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
                 os.makedirs(assets_dir, exist_ok=True)  # 'exist_ok' is needed for parallel execution.
 
         def _export_temporary_docx_and_use(enclosed_action: Callable[[pathlib.Path], TReturn]) -> TReturn:
-            docx_path = (context.output_dir / safe_page_name).with_suffix('.docx')
-
-            # Remove temp file if exists from previous run.
-            if os.path.exists(docx_path):
-                os.remove(docx_path)
-
             try:
-                log(f"🖨️ Exporting temporary DOCX: '{docx_path}'")
-                page.export_docx(docx_path)
-
-                return enclosed_action(docx_path)
+                with temporary_file_path(suffix='.docx') as docx_path:
+                    log(f"🖨️ Exporting temporary DOCX: '{docx_path}'")
+                    page.export_docx(docx_path)
+                    return enclosed_action(docx_path)
             except pywintypes.com_error:
                 log(f"⚠️ !!WARNING!! Page Failed: '{page.name}'")
                 return None
-            finally:
-                # Clean up docx
-                if os.path.exists(docx_path):
-                    log(f"🧹 Cleaning up DOCX: '{docx_path}'")
-                    os.remove(docx_path)
 
         def _export_temporary_pdf_and_use(enclosed_action: Callable[[pathlib.Path], TReturn]) -> TReturn:
-            pdf_path = (context.output_dir / safe_page_name).with_suffix('.pdf')
-
-            # Remove temp file if exists from previous run.
-            if os.path.exists(pdf_path):
-                os.remove(pdf_path)
-
             try:
-                log(f"🖨️ Exporting temporary PDF: '{pdf_path}'")
-                page.export_pdf(pdf_path)
-
-                return enclosed_action(pdf_path)
+                with temporary_file_path(suffix='.pdf') as pdf_path:
+                    log(f"🖨️ Exporting temporary PDF: '{pdf_path}'")
+                    page.export_pdf(pdf_path)
+                    return enclosed_action(pdf_path)
             except pywintypes.com_error:
                 log(f"⚠️ !!WARNING!! Page Failed: '{page.name}'")
                 return None
-            finally:
-                # Clean up docx
-                if os.path.exists(pdf_path):
-                    log(f"🧹 Cleaning up PDF: '{pdf_path}'")
-                    os.remove(pdf_path)
 
         def _convert_docx_to_md_and_use(
             docx_path: pathlib.Path,
