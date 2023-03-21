@@ -55,7 +55,7 @@ class OneNoteExportMiddlewareDispatcher(OneNoteExportMiddleware[OneNoteApplicati
         if not depth_first:
             accumulated_middleware_return = next_middleware(context)
 
-        for child in context.node.get_children():
+        for child in context.node.children:
             child_context = self._middleware_context_factory.create_context_for_traversal_transition_to_child(context, child)
             pipeline_for_child = self._get_middleware_by_best_type_fit(child_context.node)
 

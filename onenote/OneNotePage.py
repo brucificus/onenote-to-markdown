@@ -29,7 +29,7 @@ class OneNotePage(OneNoteElementBasedNode):
         if self.is_subpage:
             return
 
-        parents_children = sorted(self.parent.get_children(), key=lambda x: x.index)
+        parents_children = sorted(self.parent.children, key=lambda x: x.index)
         parents_children_after_me = [x for x in parents_children if x.index > self.index]
         sibling_subpages_before_next_non_subpage = takewhile(lambda x: x.is_subpage, parents_children_after_me)
         for subpage in sibling_subpages_before_next_non_subpage:
@@ -38,8 +38,14 @@ class OneNotePage(OneNoteElementBasedNode):
             else:
                 raise ValueError(f'Unexpected child type: {type(subpage)}')
 
-    def get_children(self) -> Iterable['OneNoteNode']:
+    def _get_children(self) -> Iterable['OneNotePage']:
         return self._get_subpages()
+
+    @property
+    @cache
+    def children(self) -> tuple['OneNotePage', ...]:
+        result_children = self._get_children()
+        return tuple(result_children)
 
     @property
     @cache
