@@ -14,7 +14,7 @@ class OneNoteSection(OneNoteElementBasedNode):
         super().__init__(element, parent, index, app)
 
     def _get_non_subpage_pages(self) -> Iterable[OneNotePage]:
-        for child in super().get_children():
+        for child in super()._get_children():
             if isinstance(child, OneNotePage) and not child.is_subpage:
                 yield child
             elif child.is_subpage:
@@ -22,8 +22,14 @@ class OneNoteSection(OneNoteElementBasedNode):
             else:
                 raise ValueError(f'Unexpected child type: {type(child)}')
 
-    def get_children(self) -> Iterable[OneNoteNode]:
+    def _get_children(self) -> Iterable[OneNotePage]:
         return self._get_non_subpage_pages()
+
+    @property
+    @cache
+    def children(self) -> tuple[OneNotePage, ...]:
+        result_children = self._get_children()
+        return tuple(result_children)
 
     @property
     @cache
