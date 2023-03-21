@@ -106,7 +106,7 @@ class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
             md_path: pathlib.Path,
             pdf_path: pathlib.Path
         ) -> TReturn:
-            def _extract_pdf_pictures():
+            def _extract_pdf_pictures() -> list[pathlib.Path]:
                 _ensure_assets_dir_exists()
                 result_image_names = []
                 try:
@@ -121,27 +121,29 @@ class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
                         xref = img[0]
                         pix = fitz.Pixmap(doc, xref)
                         png_name = "%s_%s.png" % (safe_page_name, str(img_num).zfill(3))
-                        png_path = context.assets_dir / pathlib.Path(png_name)
-                        log("🖼️ Writing png: %s" % png_path)
+                        page_relative_png_path = context.assets_dir / pathlib.Path(png_name)
+                        png_output_path = context.output_dir / page_relative_png_path
+                        log("🖼️ Writing png: %s" % str(png_output_path))
                         if pix.n < 5:
-                            pix.save(str(png_path))
+                            pix.save(str(png_output_path))
                         else:
                             pix1 = fitz.Pixmap(fitz.csRGB, pix)
-                            pix1.save(str(png_path))
+                            pix1.save(str(png_output_path))
                             pix1 = None
                         pix = None
-                        result_image_names.append(png_name)
+                        result_image_names.append(page_relative_png_path)
                         img_num += 1
                 return result_image_names
 
-            def _fix_image_names(image_names_to_fix):
+            def _fix_image_names(image_names_to_fix: list[pathlib.Path]):
                 tmp_path = md_path.with_suffix(md_path.suffix + '.tmp')
                 i = 0
                 with open(md_path, 'r', encoding='utf-8') as f_md:
                     with open(tmp_path, 'w', encoding='utf-8') as f_tmp:
                         body_md = f_md.read()
-                        for i, name in enumerate(image_names_to_fix):
-                            body_md = re.sub("media\/image" + str(i + 1) + "\.[a-zA-ZА-Яа-яЁё]+", name, body_md)
+                        for i, path in enumerate(image_names_to_fix):
+                            path_str_for_sub = str(path).replace("\\", "\\\\")
+                            body_md = re.sub("media/image" + str(i + 1) + r"\.\w+", path_str_for_sub, body_md)
                         f_tmp.write(body_md)
                 shutil.move(tmp_path, md_path)
 
