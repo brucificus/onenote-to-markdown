@@ -92,9 +92,8 @@ class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
                 try:
                     doc = fitz.open(pdf_path)
                 except fitz.fitz.FileDataError as e:
-                    if e.args[0] == "cannot open broken document":
-                        log("🚫 Error opening pdf: %s" % pdf_path)
-                        return result_image_names
+                    log("🚫 Error opening pdf: %s" % pdf_path)
+                    return result_image_names
                 img_num = 0
                 for i in range(len(doc)):
                     for img in doc.get_page_images(i):
