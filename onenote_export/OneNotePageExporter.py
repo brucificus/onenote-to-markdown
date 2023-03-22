@@ -86,33 +86,67 @@ class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
             md_path: pathlib.Path,
             pdf_path: pathlib.Path
         ) -> TReturn:
+            def _count_non_ignorable_drawings(pdf_page: fitz.Page) -> int:
+                count: int = 0
+                for pdf_page_drawing in pdf_page.get_drawings():
+                    drawing_items = pdf_page_drawing['items']
+                    drawing_items_count = len(drawing_items)
+                    if drawing_items_count == 0:
+                        continue
+                    if drawing_items_count == 1:
+                        drawing_item = drawing_items[0]
+                        drawing_item_shape = drawing_item[1]
+                        is_rect = isinstance(drawing_item_shape, fitz.Rect)
+                        if is_rect:
+                            rect_height_is_default = abs(drawing_item_shape.height - 0.72) < 0.01
+                            rect_width_is_default = abs(drawing_item_shape.width - 100.37) < 0.01
+                            if rect_width_is_default or rect_height_is_default:
+                                continue
+                    count += 1
+                return count
+
             def _extract_pdf_pictures() -> list[pathlib.Path]:
                 _ensure_assets_dir_exists()
                 result_image_names = []
                 try:
+                    # https://pymupdf.readthedocs.io/en/latest/document.html#Document.__init__
                     doc = fitz.open(pdf_path)
                 except fitz.fitz.FileDataError as e:
-                    log("🚫 Error opening pdf: %s" % pdf_path)
+                    log(f"❗🚫 Error opening PDF for '{md_path}': {e}")
                     return result_image_names
                 img_num = 0
-                for i in range(len(doc)):
-                    for img in doc.get_page_images(i):
-                        xref = img[0]
-                        pix = fitz.Pixmap(doc, xref)
-                        png_name = "%s_%s.png" % (safe_page_name, str(img_num).zfill(3))
-                        page_relative_png_path = context.assets_dir / pathlib.Path(png_name)
-                        png_output_path = context.output_dir / page_relative_png_path
-                        log("🖼️ Writing png: %s" % str(png_output_path))
-                        if pix.n < 5:
-                            pix.save(str(png_output_path))
-                        else:
-                            pix1 = fitz.Pixmap(fitz.csRGB, pix)
-                            pix1.save(str(png_output_path))
-                            pix1 = None
-                        pix = None
-                        result_image_names.append(page_relative_png_path)
-                        img_num += 1
-                return result_image_names
+                page_index = 0
+                try:
+                    if len(doc) == 0:
+                        log(f"❗🚫 Error opening the PDF for '{md_path}' - it has no pages.")
+                        return result_image_names
+                    # https://pymupdf.readthedocs.io/en/latest/document.html#Document.pages
+                    for pdf_page in doc.pages():
+                        # https://pymupdf.readthedocs.io/en/latest/page.html#Page.get_images
+                        for pdf_page_image in pdf_page.get_images():
+                            xref = pdf_page_image[0]
+                            pix = fitz.Pixmap(doc, xref)
+                            png_name = "%s_%s.png" % (safe_page_name, str(img_num).zfill(3))
+                            page_relative_png_path = context.assets_dir / pathlib.Path(png_name)
+                            png_output_path = context.output_dir / page_relative_png_path
+                            log("🖼️ Writing png: %s" % str(png_output_path))
+                            # https://pymupdf.readthedocs.io/en/latest/pixmap.html#Pixmap.n
+                            if pix.n < 5:
+                                pix.save(str(png_output_path))
+                            else:
+                                pix1 = fitz.Pixmap(fitz.csRGB, pix)
+                                pix1.save(str(png_output_path))
+                                pix1 = None
+                            pix = None
+                            result_image_names.append(page_relative_png_path)
+                            img_num += 1
+                        count_of_non_ignorable_drawings = _count_non_ignorable_drawings(pdf_page)
+                        if count_of_non_ignorable_drawings > 0:
+                            log(f"⚠️ !!WARNING!! Page {page_index} of the PDF for '{md_path}' has {count_of_non_ignorable_drawings} non-empty drawings that are not exported.")
+                        page_index += 1
+                    return result_image_names
+                finally:
+                    doc.close()
 
             def _fix_image_names(image_names_to_fix: list[pathlib.Path]):
                 tmp_path = md_path.with_suffix(md_path.suffix + '.tmp')
@@ -124,6 +158,9 @@ class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
                             path_str_for_sub = urllib.parse.quote(str(path).encode('utf8'), safe='\\').replace('\\', '/')
                             body_md = re.sub("media/image" + str(i + 1) + r"\.\w+", path_str_for_sub, body_md)
                         f_tmp.write(body_md)
+                        body_remaining_broken_image_count = len(re.findall(r"media/image\d+\.\w+", body_md))
+                        if body_remaining_broken_image_count > 0:
+                            log(f"⚠️ Still has broken images: '{md_path}'")
                 shutil.move(tmp_path, md_path)
 
             # Output picture assets to folder.
