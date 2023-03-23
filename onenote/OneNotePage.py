@@ -1,3 +1,4 @@
+import pathlib
 from datetime import datetime
 from functools import cache
 from itertools import takewhile
@@ -19,11 +20,11 @@ class OneNotePage(OneNoteElementBasedNode):
     def is_subpage(self) -> bool:
         return 'isSubPage' in self._element.attrib and self._element.attrib['isSubPage'] == 'true'
 
-    def export_docx(self, path: str):
-        self._app.Publish(self.node_id, path, win32.constants.pfWord, "")
+    def _export_docx(self, path: pathlib.Path):
+        self._app.Publish(self.node_id, str(path), win32.constants.pfWord, "")
 
-    def export_pdf(self, path: str):
-        self._app.Publish(self.node_id, path, 3, "")
+    def _export_pdf(self, path: pathlib.Path):
+        self._app.Publish(self.node_id, str(path), 3, "")
 
     def _get_subpages(self) -> Iterable['OneNotePage']:
         if self.is_subpage:
