@@ -15,6 +15,7 @@ from .OneNoteExportMiddleware import OneNoteExportMiddleware
 from .OneNoteExportMiddlewarePartial import OneNoteExportMiddlewarePartial
 from .OneNotePageAssetExportError import OneNotePageAssetExportError
 from .OneNotePageExportMiddlewareContext import OneNotePageExportMiddlewareContext
+from .temporary_file import TemporaryFilePath
 from .type_variables import TReturn
 
 
@@ -70,23 +71,30 @@ class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
 
                 def _try_save_pix_image(pix: fitz.Pixmap, png_output_path: pathlib.Path):
                     save_image: callable
-                    # https://pymupdf.readthedocs.io/en/latest/pixmap.html#Pixmap.n
-                    if pix.n < 5:
-                        save_image = functools.partial(pix.save, str(png_output_path))
-                        pix = None
-                        del pix
-                    else:
-                        pix1 = fitz.Pixmap(fitz.csRGB, pix)
-                        save_image = functools.partial(pix1.save, str(png_output_path))
-                        pix1 = None
-                        del pix1
-                    try:
-                        save_image()
-                    except Exception as e:
-                        raise OneNotePageAssetExportError(page, e) from e
-                    finally:
-                        save_image = None
-                        del save_image
+                    with TemporaryFilePath(suffix='.png') as tmp_png_output_path:
+                        # https://pymupdf.readthedocs.io/en/latest/pixmap.html#Pixmap.n
+                        if pix.n < 5:
+                            save_image = functools.partial(pix.save, str(tmp_png_output_path))
+                            pix = None
+                            del pix
+                        else:
+                            pix1 = fitz.Pixmap(fitz.csRGB, pix)
+                            save_image = functools.partial(pix1.save, str(tmp_png_output_path))
+                            pix1 = None
+                            del pix1
+                        try:
+                            save_image()
+                        except Exception as e:
+                            raise OneNotePageAssetExportError(page, e) from e
+                        finally:
+                            save_image = None
+                            del save_image
+                        try:
+                            if png_output_path.exists():
+                                os.remove(str(png_output_path))
+                            shutil.move(tmp_png_output_path, png_output_path)
+                        except Exception as e:
+                            raise OneNotePageAssetExportError(page, e) from e
 
                 def _extract_pdf_pictures() -> list[pathlib.Path]:
                     _ensure_assets_dir_exists()
