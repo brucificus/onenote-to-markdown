@@ -1,7 +1,6 @@
 import unittest
 from typing import Callable
 
-from onenote_export.OneNoteExportMiddleware import OneNoteExportMiddleware
 from onenote_export.SimpleOneNoteExportMiddlewareFactory import SimpleOneNoteExportMiddlewareFactory
 
 

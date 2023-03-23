@@ -3,6 +3,7 @@ from typing import Callable
 
 from onenote import OneNoteNode, OneNotePage, OneNoteApplication
 from .OneNoteExportMiddlewareContext import OneNoteExportMiddlewareContext
+from .OneNotePageExportMiddlewareContext import OneNotePageExportMiddlewareContext
 from .Pathlike import Pathlike
 
 
@@ -40,12 +41,18 @@ class OneNoteExportMiddlewareContextFactory:
             new_output_dir = current_context.output_dir
             new_assets_dir = current_context.assets_dir
 
-        return OneNoteExportMiddlewareContext(
+        context = OneNoteExportMiddlewareContext(
             node=child,
             output_dir=new_output_dir,
             assets_dir=new_assets_dir,
             convert_node_name_to_path_component=self._convert_node_name_to_path_component
         )
+
+        if isinstance(child, OneNotePage):
+            context = OneNotePageExportMiddlewareContext.begin_export(context)
+
+        return context
+
 
     def create_context_for_application(self, node: OneNoteApplication) -> OneNoteExportMiddlewareContext[OneNoteApplication]:
         current_output_dir = self._root_output_dir

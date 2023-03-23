@@ -6,8 +6,8 @@ from onenote_export.TestOneNoteExporter import *
 from onenote_export.TestOneNoteExportMiddlewareContext import *
 from onenote_export.TestOneNoteExportMiddlewareContextFactory import *
 from onenote_export.TestOneNoteExportMiddlewareDispatcher import *
+from onenote_export.TestOneNotePageExporter import *
 from onenote_export.TestSimpleExportMiddlewareFactory import *
-
 
 if __name__ == '__main__':
     unittest.main()
