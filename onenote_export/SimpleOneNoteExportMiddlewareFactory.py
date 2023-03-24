@@ -1,13 +1,32 @@
 import functools
-from typing import Generic, Callable
+import inspect
+import itertools
+import logging
+from typing import Generic, Callable, Optional
 
 from .OneNoteExportMiddleware import OneNoteExportMiddleware
 from .OneNoteExportMiddlewareContext import OneNoteExportMiddlewareContext
 from .OneNoteExportMiddlewarePartial import OneNoteExportMiddlewarePartial
 from .type_variables import TNode, TReturn
+from .simple_injector import InjectableParameter, prepare_action_params
 
 
 class SimpleOneNoteExportMiddlewareFactory(Generic[TNode, TReturn]):
+    @staticmethod
+    def _prepare_action_params(action: callable, context: OneNoteExportMiddlewareContext) -> tuple[tuple, dict]:
+        injectables = (
+            InjectableParameter(('context', 'ctx', 'c'), (OneNoteExportMiddlewareContext,), lambda: context),
+            InjectableParameter(('logger', 'log', 'l'), (logging.Logger,), lambda: context.get_logger(module_name=__name__)),
+        )
+        return prepare_action_params(action, injectables)
+
+    @staticmethod
+    def _partialize_action_with_injected_params(action: callable, context: OneNoteExportMiddlewareContext) -> callable:
+        """Returns a partial of the provided action with the parameters injected."""
+        args, kwargs = SimpleOneNoteExportMiddlewareFactory._prepare_action_params(action, context)
+        return functools.partial(action, *args, **kwargs)
+
+
     @staticmethod
     def _execute_middlewares(
         middlewares: tuple[OneNoteExportMiddleware[TNode, TReturn], ...],
@@ -34,22 +53,23 @@ class SimpleOneNoteExportMiddlewareFactory(Generic[TNode, TReturn]):
 
 
     def before(self,
-               action: OneNoteExportMiddlewarePartial[TNode, TReturn]
+               action: Callable[[...], TReturn]
                ) -> OneNoteExportMiddleware[TNode, TReturn]:
         """Creates and returns a middleware that executes the provided 'action' before the next middleware in the current
-        chain.
+        chain is executed.
         """
         def middleware(
             context: OneNoteExportMiddlewareContext[TNode],
             next_middleware: OneNoteExportMiddlewarePartial[TNode, TReturn]
         ) -> TReturn:
-            action(context)  # TODO: Don't throw away this TReturn. Accumulate/combine TReturn values and return result.
+            action_final = SimpleOneNoteExportMiddlewareFactory._partialize_action_with_injected_params(action, context)
+            action_final()  # TODO: Don't throw away this TReturn. Accumulate/combine TReturn values and return result.
             return next_middleware(context)
         return middleware
 
 
     def preempt(self,
-                action: OneNoteExportMiddlewarePartial[TNode, TReturn]
+                action: Callable[[...], TReturn]
                 ) -> OneNoteExportMiddleware[TNode, TReturn]:
         """Creates and returns a middleware that executes the given 'action' but never executes the following
         middlewares in the current chain.
@@ -58,8 +78,10 @@ class SimpleOneNoteExportMiddlewareFactory(Generic[TNode, TReturn]):
             context: OneNoteExportMiddlewareContext[TNode],
             next_middleware: OneNoteExportMiddlewarePartial[TNode, TReturn]
         ) -> TReturn:
-            return action(context)
+            action_final = SimpleOneNoteExportMiddlewareFactory._partialize_action_with_injected_params(action, context)
+            return action_final()
         return middleware
+
 
     def either_or(self,
                   condition: Callable[[OneNoteExportMiddlewareContext[TNode]], bool],

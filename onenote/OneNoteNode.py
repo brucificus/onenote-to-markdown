@@ -1,8 +1,5 @@
-import traceback
 from functools import cache
-import pywintypes
 from abc import ABC, abstractmethod
-from logging import info as log
 from typing import Callable, Iterable
 from win32com import client as win32
 from xml.etree import ElementTree
@@ -21,12 +18,7 @@ class OneNoteNode(ABC):
 
     @staticmethod
     def _create_onenote_com_object() -> win32.CDispatch:
-        try:
-            return win32.gencache.EnsureDispatch("OneNote.Application.12")
-        except pywintypes.com_error as e:
-            traceback.print_exc()
-            log("❗!!Error!!❗ Hint: Make sure OneNote is open first.")
-            raise e
+        return win32.gencache.EnsureDispatch("OneNote.Application.12")
 
     def accept(self, visitor: Callable[['OneNoteNode'], None]):
         visitor(self)

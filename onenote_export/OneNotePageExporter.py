@@ -5,12 +5,10 @@ import os
 import pathlib
 import re
 import shutil
-from logging import info as log
 from typing import Callable
 import urllib
 
 from onenote import OneNotePage
-from . import OneNotePageExportError
 from .OneNoteExportMiddleware import OneNoteExportMiddleware
 from .OneNoteExportMiddlewarePartial import OneNoteExportMiddlewarePartial
 from .OneNotePageAssetExportError import OneNotePageAssetExportError
@@ -37,6 +35,7 @@ class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
     ) -> TReturn:
         if not isinstance(context, OneNotePageExportMiddlewareContext):
             raise TypeError(f"Context must be an instance of OneNotePageExportMiddlewareContext, not {type(context)}")
+        logger = context.get_logger(__name__)
 
         with context:
             page = context.node
@@ -104,7 +103,7 @@ class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
                     page_index = 0
 
                     if len(doc) == 0:
-                        log(f"❗🚫 Error opening the PDF for '{context.output_md_path}' - it has no pages.")
+                        logger.info(f"🚫 Error opening the PDF for '{context.output_md_path}' - it has no pages.")
                         return result_image_names
                     # https://pymupdf.readthedocs.io/en/latest/document.html#Document.pages
                     for pdf_page in doc.pages():
@@ -115,13 +114,13 @@ class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
                             png_name = "%s_%s.png" % (context.safe_page_name, str(img_num).zfill(3))
                             page_relative_png_path = context.assets_dir / pathlib.Path(png_name)
                             png_output_path = context.output_dir / page_relative_png_path
-                            log("🖼️ Writing png: %s" % str(png_output_path))
+                            logger.debug("🖼️ Writing png: %s" % str(png_output_path))
                             _try_save_pix_image(pix, png_output_path)
                             result_image_names.append(page_relative_png_path)
                             img_num += 1
                         count_of_non_ignorable_drawings = _count_non_ignorable_drawings(pdf_page)
                         if count_of_non_ignorable_drawings > 0:
-                            log(f"⚠️ !!WARNING!! Page {page_index} of the PDF for '{context.output_md_path}' has {count_of_non_ignorable_drawings} non-empty drawings that are not exported.")
+                            logger.warning(f"⚠️ Page {page_index} of the PDF for '{context.output_md_path}' has {count_of_non_ignorable_drawings} non-empty drawings that are not exported.")
                         page_index += 1
                     return result_image_names
 
@@ -137,15 +136,15 @@ class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
                             f_tmp.write(body_md)
                             body_remaining_broken_image_count = len(re.findall(r"media/image\d+\.\w+", body_md))
                             if body_remaining_broken_image_count > 0:
-                                log(f"⚠️ Still has broken images: '{context.output_md_path}'")
+                                logger.warning(f"⚠️ Still has broken images: '{context.output_md_path}'")
                     shutil.move(tmp_path, context.output_md_path)
 
                 # Output picture assets to folder.
-                log(f"✂️️ Extracting PDF pictures: '{context.output_md_path}'")
+                logger.info(f"✂️️ Extracting PDF pictures: '{context.output_md_path}'")
                 image_names_extracted_from_pdf = _extract_pdf_pictures()
 
                 # Replace image names in markdown file.
-                log(f"📝️️ Updating image references in markdown: '{context.output_md_path}'")
+                logger.info(f"📝️️ Updating image references in markdown: '{context.output_md_path}'")
                 _fix_image_names(image_names_extracted_from_pdf)
 
                 return next_middleware(context)

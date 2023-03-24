@@ -2,7 +2,6 @@ import logging
 import os
 import re
 import traceback
-from logging import info as log
 import pywintypes
 
 from onenote import OneNoteApplication, OneNoteNode, OneNoteElementBasedNode
@@ -14,9 +13,11 @@ OUTPUT_DIR = os.path.join(os.path.expanduser('~'), "Desktop", "OneNoteExport")
 ASSETS_DIR = "assets"
 PROCESS_RECYCLE_BIN = False
 LOGFILE = 'onenote_to_markdown.log' # Set to None to disable logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', encoding='utf-8')
 if LOGFILE:
-    logging.Logger.addHandler = logging.FileHandler(LOGFILE)
+    fh = logging.FileHandler(LOGFILE, mode='w', encoding='utf-8', delay=True)
+    fh.setLevel(logging.WARNING)
+    logging.root.addHandler(fh)
 # For debugging purposes, set this variable to limit which pages are exported:
 EXPORT_EXCLUSION_FILTER = r''
 
@@ -45,4 +46,4 @@ if __name__ == "__main__":
 
     except pywintypes.com_error as e:
         traceback.print_exc()
-        log("!!!Error!!! Hint: Make sure OneNote is open first.")
+        logging.critical("Hint: Make sure OneNote is open first.", exc_info=True)
