@@ -1,6 +1,6 @@
 import unittest
 
-from .DateDigitsSubstitutionFactory import DateDigitsSubstitutionFactory
+from path_scrubbing.DateDigitsSubstitutionFactory import DateDigitsSubstitutionFactory
 
 
 class TestDateDigitsSubstitutionFactory(unittest.TestCase):
