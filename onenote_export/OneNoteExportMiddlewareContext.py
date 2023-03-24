@@ -1,7 +1,9 @@
+import logging
 from typing import Generic, Callable
 
 from .Pathlike import Pathlike
 from .type_variables import TNode
+from .logging_helper import get_logger
 
 
 class OneNoteExportMiddlewareContext(Generic[TNode]):
@@ -28,3 +30,6 @@ class OneNoteExportMiddlewareContext(Generic[TNode]):
     @property
     def convert_node_name_to_path_component(self) -> Callable[[str], Pathlike]:
         return self._convert_node_name_to_path_component
+
+    def get_logger(self, module_name: str) -> logging.Logger:
+        return get_logger(module_name=module_name, onenote_node=self.node)

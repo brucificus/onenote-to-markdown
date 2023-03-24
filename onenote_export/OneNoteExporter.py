@@ -59,38 +59,38 @@ def create_default_onenote_exporter(
     head_middlewares_by_type = {
         OneNoteApplication: mf.either_or(
             lambda context: should_export(context.node),
-            mf.before(lambda context: log('🪟 Found OneNote Application')),
-            mf.preempt(lambda context: log('🚫 Skipping OneNote Application'))
+            mf.before(lambda logger: logger.info('🪟 Found OneNote Application')),
+            mf.preempt(lambda logger: logger.info('🚫 Skipping OneNote Application'))
         ),
         OneNoteUnfiledNotes: mf.either_or(
             lambda context: should_export(context.node),
-            mf.before(lambda context: log('📂 Found Unfiled Notes')),
-            mf.preempt(lambda context: log('🚫 Skipping Unfiled Notes'))
+            mf.before(lambda logger: logger.info('📂 Found Unfiled Notes')),
+            mf.preempt(lambda logger: logger.info('🚫 Skipping Unfiled Notes'))
         ),
         OneNoteOpenSections: mf.either_or(
             lambda context: should_export(context.node),
-            mf.before(lambda context: log(f'📑 Found Open Sections: {context.node.name}')),
-            mf.preempt(lambda context: log(f'🚫 Skipping Open Sections: {context.node.name}'))
+            mf.before(lambda context, logger: logger.info(f'📑 Found Open Sections: {context.node.name}')),
+            mf.preempt(lambda logger: logger.info(f'🚫 Skipping Open Sections: {context.node.name}'))
         ),
         OneNoteNotebook: mf.either_or(
             lambda context: should_export(context.node),
-            mf.before(lambda context: log(f'📒 Found Notebook: {context.node.name}')),
-            mf.preempt(lambda context: log(f'🚫 Skipping Notebook: {context.node.name}'))
+            mf.before(lambda context, logger: logger.info(f'📒 Found Notebook: {context.node.name}')),
+            mf.preempt(lambda context, logger: logger.info(f'🚫 Skipping Notebook: {context.node.name}'))
         ),
         OneNoteSectionGroup: mf.either_or(
             lambda context: should_export(context.node),
-            mf.before(lambda context: log(f'📑 Found Section Group: {context.node.name}')),
-            mf.preempt(lambda context: log(f'🚫 Skipping Section Group: {context.node.name}'))
+            mf.before(lambda context, logger: logger.info(f'📑 Found Section Group: {context.node.name}')),
+            mf.preempt(lambda context, logger: logger.info(f'🚫 Skipping Section Group: {context.node.name}'))
         ),
         OneNoteSection: mf.either_or(
             lambda context: should_export(context.node),
-            mf.before(lambda context: log(f'📑 Found Section: {context.node.name}')),
-            mf.preempt(lambda context: log(f'🚫 Skipping Section: {context.node.name}'))
+            mf.before(lambda context, logger: logger.info(f'📑 Found Section: {context.node.name}')),
+            mf.preempt(lambda context, logger: logger.info(f'🚫 Skipping Section: {context.node.name}'))
         ),
         OneNotePage: mf.either_or(
             lambda context: should_export(context.node),
-            mf.before(lambda context: log(f'️📃 Found Page: {context.node.name}')),
-            mf.preempt(lambda context: log(f'🚫 Skipping Page: {context.node.name}'))
+            mf.before(lambda context, logger: logger.info(f'️📃 Found Page: {context.node.name}')),
+            mf.preempt(lambda context, logger: logger.info(f'🚫 Skipping Page: {context.node.name}'))
         )
     }
 
