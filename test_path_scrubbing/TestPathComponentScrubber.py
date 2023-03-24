@@ -1,6 +1,6 @@
 import unittest
 
-from .PathComponentScrubber import PathComponentScrubber
+from path_scrubbing.PathComponentScrubber import PathComponentScrubber
 
 
 class TestPathComponentScrubber(unittest.TestCase):

@@ -1,6 +1,6 @@
 import unittest
 
-from .TimeDigitsSubstitutionFactory import TimeDigitsSubstitutionFactory
+from path_scrubbing.TimeDigitsSubstitutionFactory import TimeDigitsSubstitutionFactory
 
 
 class TestTimeDigitsSubstitutionFactory(unittest.TestCase):

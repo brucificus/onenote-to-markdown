@@ -1,7 +1,7 @@
 import fitz
 import pathlib
 import unittest
-from unittest.mock import Mock, MagicMock, patch, mock_open
+from unittest.mock import MagicMock, patch, mock_open
 
 from onenote import OneNotePage, OneNoteSection, OneNoteSectionGroup, OneNoteNotebook, OneNoteApplication
 from onenote_export.OneNoteExportMiddlewareContext import OneNoteExportMiddlewareContext
