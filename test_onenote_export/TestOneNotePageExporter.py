@@ -4,17 +4,18 @@ import unittest
 from unittest.mock import MagicMock, patch, mock_open
 
 from onenote import OneNotePage, OneNoteSection, OneNoteSectionGroup, OneNoteNotebook, OneNoteApplication
-from onenote_export.OneNoteExportMiddlewareContext import OneNoteExportMiddlewareContext
-from onenote_export.OneNotePageExportMiddlewareContext import OneNotePageExportMiddlewareContext
+from onenote_export.OneNoteExportTaskContext import OneNoteExportTaskContext
+from onenote_export.OneNotePageExportTaskContext import OneNotePageExportTaskContext
 from onenote_export.OneNotePageExporter import OneNotePageExporter
 from onenote_export.TemporaryOneNotePageDocxExport import TemporaryOneNotePageDocxExport
 from onenote_export.TemporaryOneNotePagePdfExport import TemporaryOneNotePagePdfExport
+from path_scrubbing import PathComponentScrubber
 
 
 class TestOneNotePageExporter(unittest.TestCase):
     def test_can_instantiate(self):
         # Arrange
-        subject_ctor_args = ()
+        subject_ctor_args = (self._mock_context(), ())
         subject_ctor_kwargs = {}
 
         # Act
@@ -34,37 +35,33 @@ class TestOneNotePageExporter(unittest.TestCase):
     @patch('shutil.move', lambda _, __: None)
     def test_can_invoke_without_exception(self):
         # Arrange
-        context_param = self._mock_middleware_context()
-        next_middleware_param = lambda _: None
         subject = self._create_subject_with_mocked_dependencies()
 
         # Act
-        actual = subject(context_param, next_middleware_param)
+        actual = subject()
 
         # Assert
         self.assertEqual(actual, None)
 
-    @staticmethod
-    def _mock_middleware_context() -> OneNotePageExportMiddlewareContext:
-        page_node = TestOneNotePageExporter._mock_onenote_page()
+    def _mock_context(self) -> OneNotePageExportTaskContext:
+        page_node = self._mock_onenote_page()
         mock_output_dir = MagicMock(spec=pathlib.Path)
         mock_assets_dir = MagicMock(spec=pathlib.Path)
-        mock_path_component_scrubber = lambda _: MagicMock(spec=pathlib.Path)
-        basis_context = OneNoteExportMiddlewareContext(
+        mock_path_component_scrubber = MagicMock(spec=PathComponentScrubber)
+        basis_context = OneNoteExportTaskContext(
             page_node,
             mock_output_dir,  # output_dir
             mock_assets_dir,  # assets_dir
-            mock_path_component_scrubber,  # convert_node_name_to_path_component
+            mock_path_component_scrubber,  # path_component_scrubber
         )
-        context_param = OneNotePageExportMiddlewareContext(
+        context_param = OneNotePageExportTaskContext(
             basis_context,
             create_temporary_pdf_export_handler=lambda _: MagicMock(spec=TemporaryOneNotePagePdfExport),
             create_temporary_docx_export_handler=lambda _: MagicMock(spec=TemporaryOneNotePageDocxExport),
         )
         return context_param
 
-    @staticmethod
-    def _mock_onenote_page() -> OneNotePage:
+    def _mock_onenote_page(self) -> OneNotePage:
         application_node = MagicMock(spec=OneNoteApplication)
         application_node.parent = None
 
@@ -86,10 +83,9 @@ class TestOneNotePageExporter(unittest.TestCase):
 
         return page_node
 
-    @staticmethod
-    def _create_subject_with_mocked_dependencies() -> OneNotePageExporter:
+    def _create_subject_with_mocked_dependencies(self) -> OneNotePageExporter:
         subject_ctor_args = ()
-        subject_ctor_kwargs = {}
+        subject_ctor_kwargs = {'context': self._mock_context(), 'prerequisites': ()}
 
         return OneNotePageExporter(*subject_ctor_args, **subject_ctor_kwargs)
 

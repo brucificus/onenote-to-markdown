@@ -7,8 +7,7 @@ class TestOneNoteExporter(unittest.TestCase):
     def test_can_instantiate(self):
         # Arrange
         subject_ctor_args = (
-            None,  # root_middleware
-            None,  # create_middleware_context_for_application
+            None,  # task_factory: OneNoteExportTaskFactory
         )
         subject_ctor_kwargs = {}
 
@@ -23,7 +22,7 @@ class TestOneNoteExporter(unittest.TestCase):
         factory_args = (
             None,  # root_output_dir
             None,  # page_relative_assets_dir
-            None,  # convert_node_name_to_path_component
+            None,  # path_component_scrubber
             lambda n: True,  # should_export
         )
         factory_kwargs = {}

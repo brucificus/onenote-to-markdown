@@ -20,9 +20,6 @@ class OneNoteNode(ABC):
     def _create_onenote_com_object() -> win32.CDispatch:
         return win32.gencache.EnsureDispatch("OneNote.Application.12")
 
-    def accept(self, visitor: Callable[['OneNoteNode'], None]):
-        visitor(self)
-
     def _get_hierarchy_xml(self, node_id: str, scope: HierarchyScope) -> ElementTree:
         return ElementTree.fromstring(self._app.GetHierarchy(node_id, scope.value, ""))
 
