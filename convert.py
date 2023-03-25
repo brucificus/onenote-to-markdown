@@ -39,7 +39,7 @@ if __name__ == "__main__":
         exporter = create_default_onenote_exporter(
             root_output_dir=OUTPUT_DIR,
             page_relative_assets_dir=ASSETS_DIR,
-            convert_node_name_to_path_component=path_scrubber,
+            path_component_scrubber=path_scrubber,
             should_export=should_handle
         )
         exporter.execute_export(onenote)

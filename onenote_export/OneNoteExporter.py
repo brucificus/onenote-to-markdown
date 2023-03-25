@@ -1,5 +1,5 @@
-from logging import info as log
-from typing import Callable
+from typing import Callable, Dict, Optional, Tuple
+import logging
 import pathlib
 
 from onenote import \
@@ -11,113 +11,95 @@ from onenote import \
     OneNotePage,\
     OneNoteSectionGroup,\
     OneNoteSection
-from .SimpleOneNoteExportMiddlewareFactory import SimpleOneNoteExportMiddlewareFactory
-from .OneNoteExportMiddleware import OneNoteExportMiddleware
-from .OneNoteExportMiddlewareContext import OneNoteExportMiddlewareContext
-from .OneNoteExportMiddlewareContextFactory import OneNoteExportMiddlewareContextFactory
-from .OneNoteExportMiddlewareDispatcher import OneNoteExportMiddlewareDispatcher
-from .OneNotePageExporter import OneNotePageExporter
+from .OneNoteExportTaskContextFactory import OneNoteExportTaskContextFactory
+from .OneNoteExportTaskBase import OneNoteExportTaskBase
+from .OneNoteExportTaskFactory import OneNoteExportTaskFactory
 from .Pathlike import Pathlike
 
 
 class OneNoteExporter:
     def __init__(self,
-                 root_middleware: OneNoteExportMiddleware[OneNoteApplication, None],
-                 create_middleware_context_for_application: Callable[[OneNoteApplication], OneNoteExportMiddlewareContext[OneNoteApplication]]
-    ):
-        self._root_middleware = root_middleware
-        self._create_middleware_context_for_application = create_middleware_context_for_application
+                 task_factory: OneNoteExportTaskFactory,
+                 *,
+                 logger: logging.Logger = logging.getLogger(__name__),
+                 ):
+        self._task_factory = task_factory
+        self._logger = logger
+
+    def _scan_and_create_export_tasks(self, application: OneNoteApplication) -> Tuple[OneNoteExportTaskBase, ...]:
+        export_tasks: Dict[OneNoteNode, OneNoteExportTaskBase] = {}
+
+        def create_export_task(node: OneNoteNode) -> Optional[OneNoteExportTaskBase]:
+            if hasattr(node, 'parent'):
+                prereqs = (get_or_create_export_task(node.parent),)
+            else:
+                prereqs = ()
+            prereqs = (t for t in prereqs if t is not None)
+            return self._task_factory.create_task(node, prereqs)
+
+        def get_or_create_export_task(node: OneNoteNode) -> Optional[OneNoteExportTaskBase]:
+            if node not in export_tasks:
+                new_task = create_export_task(node)
+                export_tasks[node] = new_task
+                return new_task
+            return export_tasks[node]
+
+        node_stack = (application,)
+
+
+        self._logger.info('🔍 Scanning OneNote tree…')
+        node_count = 0
+        while len(node_stack) > 0:
+            node = node_stack[0]
+            node_stack = node_stack[1:]
+            node_count += 1
+
+            get_or_create_export_task(node)
+            if isinstance(node, OneNoteApplication):
+                self._logger.info('🪟 Found OneNote Application.')
+            elif isinstance(node, OneNoteUnfiledNotes):
+                self._logger.info('📰 Found Unfiled Notes.')
+            elif isinstance(node, OneNoteOpenSections):
+                self._logger.info('🗃️ Found Open Sections.')
+            elif isinstance(node, OneNoteNotebook):
+                self._logger.info(f'📔 Found Notebook "{node.name}".')
+            elif isinstance(node, OneNoteSectionGroup):
+                self._logger.info(f'🗃️ Found Section Group "{node.name}".')
+            elif isinstance(node, OneNoteSection):
+                self._logger.info(f'📂 Found Section "{node.name}".')
+            elif isinstance(node, OneNotePage):
+                self._logger.info(f'📄 Found Page "{node.name}".')
+            else:
+                raise ValueError(f'Unexpected node type: {type(node)}')
+
+            if hasattr(node, 'children'):
+                node_stack = node_stack + tuple(node.children)
+
+        export_tasks_values = tuple(t for t in export_tasks.values() if t is not None)
+        self._logger.info(f'📝 Found {node_count} nodes and created {len(export_tasks_values)} export tasks.')
+        return export_tasks_values
 
     def execute_export(self, application: OneNoteApplication) -> None:
-        middleware_context = self._create_middleware_context_for_application(application)
-        return self._root_middleware(middleware_context, lambda context: None)
+        export_tasks = self._scan_and_create_export_tasks(application)
+
+        self._logger.info('🚀 Starting export…')
+        for export_task in export_tasks:
+            export_task()
+        self._logger.info('🏁 Export complete.')
 
 
 def create_default_onenote_exporter(
     root_output_dir: Pathlike,
     page_relative_assets_dir: Pathlike,
-    convert_node_name_to_path_component: Callable[[str], pathlib.Path],
+    path_component_scrubber: Callable[[str], pathlib.Path],
     should_export: Callable[[OneNoteNode], bool] = lambda node: True
 ) -> 'OneNoteExporter':
-    def combine_middleware_returns(a, b):
-        if a is not None and b is None:
-            return (a,)
-        if a is None and b is not None:
-            return (b,)
-        if a is None and b is None:
-            return ()
-        if a is tuple and b is tuple:
-            return a + b
-        if a is tuple:
-            return a + (b,)
-        if b is tuple:
-            return (a,) + b
-        return (a, b)
-
-    mf = SimpleOneNoteExportMiddlewareFactory()
-
-    head_middlewares_by_type = {
-        OneNoteApplication: mf.either_or(
-            lambda context: should_export(context.node),
-            mf.before(lambda logger: logger.info('🪟 Found OneNote Application')),
-            mf.preempt(lambda logger: logger.info('🚫 Skipping OneNote Application'))
-        ),
-        OneNoteUnfiledNotes: mf.either_or(
-            lambda context: should_export(context.node),
-            mf.before(lambda logger: logger.info('📂 Found Unfiled Notes')),
-            mf.preempt(lambda logger: logger.info('🚫 Skipping Unfiled Notes'))
-        ),
-        OneNoteOpenSections: mf.either_or(
-            lambda context: should_export(context.node),
-            mf.before(lambda context, logger: logger.info(f'📑 Found Open Sections: {context.node.name}')),
-            mf.preempt(lambda logger: logger.info(f'🚫 Skipping Open Sections: {context.node.name}'))
-        ),
-        OneNoteNotebook: mf.either_or(
-            lambda context: should_export(context.node),
-            mf.before(lambda context, logger: logger.info(f'📒 Found Notebook: {context.node.name}')),
-            mf.preempt(lambda context, logger: logger.info(f'🚫 Skipping Notebook: {context.node.name}'))
-        ),
-        OneNoteSectionGroup: mf.either_or(
-            lambda context: should_export(context.node),
-            mf.before(lambda context, logger: logger.info(f'📑 Found Section Group: {context.node.name}')),
-            mf.preempt(lambda context, logger: logger.info(f'🚫 Skipping Section Group: {context.node.name}'))
-        ),
-        OneNoteSection: mf.either_or(
-            lambda context: should_export(context.node),
-            mf.before(lambda context, logger: logger.info(f'📑 Found Section: {context.node.name}')),
-            mf.preempt(lambda context, logger: logger.info(f'🚫 Skipping Section: {context.node.name}'))
-        ),
-        OneNotePage: mf.either_or(
-            lambda context: should_export(context.node),
-            mf.before(lambda context, logger: logger.info(f'️📃 Found Page: {context.node.name}')),
-            mf.preempt(lambda context, logger: logger.info(f'🚫 Skipping Page: {context.node.name}'))
-        )
-    }
-
-    middleware_context_factory = OneNoteExportMiddlewareContextFactory(
+    context_factory = OneNoteExportTaskContextFactory(
         root_output_dir=root_output_dir,
         page_relative_assets_dir=page_relative_assets_dir,
-        convert_node_name_to_path_component=convert_node_name_to_path_component,
-    )
-
-    root_middleware = OneNoteExportMiddlewareDispatcher(
-        combine_returns=combine_middleware_returns,
-        middleware_context_factory=middleware_context_factory,
-        middlewares_by_type={
-            OneNoteApplication: (head_middlewares_by_type[OneNoteApplication],),
-            OneNoteUnfiledNotes: (head_middlewares_by_type[OneNoteUnfiledNotes],),
-            OneNoteOpenSections: (head_middlewares_by_type[OneNoteOpenSections],),
-            OneNoteNotebook: (head_middlewares_by_type[OneNoteNotebook],),
-            OneNoteSectionGroup: (head_middlewares_by_type[OneNoteSectionGroup],),
-            OneNoteSection: (head_middlewares_by_type[OneNoteSection],),
-            OneNotePage: (
-                head_middlewares_by_type[OneNotePage],
-                OneNotePageExporter(),
-            ),
-        },
+        path_component_scrubber=path_component_scrubber,
     )
 
     return OneNoteExporter(
-        root_middleware=root_middleware,
-        create_middleware_context_for_application=middleware_context_factory.create_context_for_application
+        task_factory=OneNoteExportTaskFactory(context_factory=context_factory, should_export=should_export),
     )

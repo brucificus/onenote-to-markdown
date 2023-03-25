@@ -4,7 +4,7 @@ from functools import cache
 from typing import ContextManager, Callable
 
 from onenote import OneNotePage
-from onenote_export.OneNoteExportMiddlewareContext import OneNoteExportMiddlewareContext
+from onenote_export.OneNoteExportTaskContext import OneNoteExportTaskContext
 from onenote_export.OneNotePageDocxExportError import OneNotePageDocxExportError
 from onenote_export.OneNotePagePandocConversionError import OneNotePagePandocConversionError
 from onenote_export.OneNotePagePdfExportError import OneNotePagePdfExportError
@@ -12,31 +12,29 @@ from onenote_export.TemporaryOneNotePageDocxExport import TemporaryOneNotePageDo
 from onenote_export.TemporaryOneNotePagePdfExport import TemporaryOneNotePagePdfExport
 
 
-class OneNotePageExportMiddlewareContext(OneNoteExportMiddlewareContext[OneNotePage], ContextManager):
+class OneNotePageExportTaskContext(OneNoteExportTaskContext[OneNotePage], ContextManager):
     def __init__(self,
-                 context: OneNoteExportMiddlewareContext[OneNotePage],
+                 context: OneNoteExportTaskContext[OneNotePage],
                  *,
                  create_temporary_pdf_export_handler: Callable[[OneNotePage], TemporaryOneNotePagePdfExport] = TemporaryOneNotePagePdfExport,
                  create_temporary_docx_export_handler: Callable[[OneNotePage], TemporaryOneNotePageDocxExport] = TemporaryOneNotePageDocxExport,
                  ):
-        if not isinstance(context, OneNoteExportMiddlewareContext):
+        if not isinstance(context, OneNoteExportTaskContext):
             raise TypeError(f"Context must be an instance of OneNoteExportMiddlewareContext, not {type(context)}")
         page = context.node
         if not isinstance(page, OneNotePage):
             raise TypeError(f"Page must be an instance of OneNotePage, not {type(page)}")
-        super().__init__(context.node, context.output_dir, context.assets_dir, context.convert_node_name_to_path_component)
-        safe_page_name = context.convert_node_name_to_path_component(page.name)
-        self._safe_page_name = str(safe_page_name)
-        self._output_md_path = (context.output_dir / safe_page_name).with_suffix('.md')
+        super().__init__(context.node, context.output_dir, context.assets_dir, context.safe_filename_base)
+        self._output_md_path = (context.output_dir / self.safe_filename_base).with_suffix('.md')
         self._output_assets_dir_path = context.output_dir / context.assets_dir
         self._create_temporary_pdf_export_handler = functools.partial(create_temporary_pdf_export_handler, page)
         self._create_temporary_docx_export_handler = functools.partial(create_temporary_docx_export_handler, page)
 
     @staticmethod
-    def begin_export(context: OneNoteExportMiddlewareContext[OneNotePage]) -> 'OneNotePageExportMiddlewareContext':
-        if isinstance(context, OneNotePageExportMiddlewareContext):
+    def begin_export(context: OneNoteExportTaskContext[OneNotePage]) -> 'OneNotePageExportTaskContext':
+        if isinstance(context, OneNotePageExportTaskContext):
             raise TypeError(f"Context must not be an instance of OneNotePageExportMiddlewareContext, not {type(context)}")
-        return OneNotePageExportMiddlewareContext(context)
+        return OneNotePageExportTaskContext(context)
 
     @property
     def _page(self) -> OneNotePage:
@@ -62,10 +60,6 @@ class OneNotePageExportMiddlewareContext(OneNoteExportMiddlewareContext[OneNoteP
         return self._page.index
 
     @property
-    def safe_page_name(self) -> str:
-        return self._safe_page_name
-
-    @property
     def output_md_path(self) -> pathlib.Path:
         return self._output_md_path
 
@@ -73,7 +67,7 @@ class OneNotePageExportMiddlewareContext(OneNoteExportMiddlewareContext[OneNoteP
     def output_assets_dir_path(self) -> pathlib.Path:
         return self._output_assets_dir_path
 
-    def __enter__(self) -> 'OneNotePageExportMiddlewareContext':
+    def __enter__(self) -> 'OneNotePageExportTaskContext':
         self._temp_pdf_export = self._create_temporary_pdf_export_handler()
         self._temp_docx_export = self._create_temporary_docx_export_handler()
 

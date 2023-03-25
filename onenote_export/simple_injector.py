@@ -2,7 +2,7 @@ import dataclasses
 import inspect
 import itertools
 from functools import cache, lru_cache
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional, Any, Callable
 
 
 @dataclasses.dataclass
@@ -41,12 +41,40 @@ class InjectableParameterSignatureComparison:
     @property
     @cache
     def is_match_by_annotation(self) -> bool:
-        return any([t for t in self.injectable_param.possible_types if issubclass(t, self.signature_param.annotation)])
+        sig_param_annotation = str(self.signature_param.annotation)
+        sig_param_annotation_is_generic = '[' in sig_param_annotation
+        if sig_param_annotation_is_generic:
+            return False
+
+        sig_param_annotation_is_collection = 'tuple' in sig_param_annotation \
+                                             or 'Tuple' in sig_param_annotation \
+                                             or 'list' in sig_param_annotation \
+                                             or 'List' in sig_param_annotation \
+                                             or 'set' in sig_param_annotation \
+                                             or 'Set' in sig_param_annotation \
+                                             or 'dict' in sig_param_annotation \
+                                             or 'Dict' in sig_param_annotation \
+                                             or 'iterable' in sig_param_annotation \
+                                             or 'Iterable' in sig_param_annotation \
+                                             or 'iterator' in sig_param_annotation \
+                                             or 'Iterator' in sig_param_annotation \
+                                             or 'sequence' in sig_param_annotation \
+                                             or 'Sequence' in sig_param_annotation \
+                                             or 'generator' in sig_param_annotation \
+                                             or 'Generator' in sig_param_annotation \
+                                             or 'collection' in sig_param_annotation \
+                                             or 'Collection' in sig_param_annotation \
+                                             or 'container' in sig_param_annotation \
+                                             or 'Container' in sig_param_annotation
+        if sig_param_annotation_is_collection:
+            return False
+
+        return any(t for t in self.injectable_param.possible_types if issubclass(t, self.signature_param.annotation))
 
     @property
     @cache
     def is_match_by_name(self) -> bool:
-        return any([n for n in self.injectable_param.possible_names if n == self.signature_param.name])
+        return any(n for n in self.injectable_param.possible_names if n == self.signature_param.name)
 
     @property
     @cache
@@ -74,8 +102,14 @@ class InjectableParameterSignatureComparison:
         return hash((self.injectable_param, self.signature_param))
 
 
+def default_resolution_fallback(signature_param: inspect.Parameter) -> Optional[Any]:
+    raise ValueError(f"Could not find a matching injectable for parameter '{signature_param.name}'")
+
+def default_should_try_injection(signature_param: inspect.Parameter) -> bool:
+    return True
+
 @lru_cache(maxsize=128)
-def prepare_action_params(action: callable, injectables: Tuple[InjectableParameter, ...]) -> tuple[tuple, dict]:
+def prepare_action_params(action: callable, injectables: Tuple[InjectableParameter, ...], should_try_injection: Callable[[inspect.Parameter], bool] = default_should_try_injection, resolution_fallback: Callable[[inspect.Parameter], Optional[Any]] = default_resolution_fallback) -> tuple[tuple, dict]:
     """Returns a tuple of the parameters of the provided action."""
 
     signature_params = list(inspect.signature(action).parameters.values())
@@ -90,7 +124,7 @@ def prepare_action_params(action: callable, injectables: Tuple[InjectableParamet
             return (), {}
 
     positional_signature_params = tuple(itertools.takewhile(
-        lambda p: p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD),
+        lambda p: p.kind in (inspect.Parameter.POSITIONAL_ONLY,),
         signature_params))
     keyword_signature_params = tuple(itertools.dropwhile(lambda p: p in positional_signature_params, signature_params))
 
@@ -99,6 +133,8 @@ def prepare_action_params(action: callable, injectables: Tuple[InjectableParamet
     # Look for strong matches for positional parameters first
     for signature_param_index in range(len(positional_signature_params)):
         signature_param = positional_signature_params[signature_param_index]
+        if not should_try_injection(signature_param):
+            continue
 
         for injectable_param_index in range(len(remaining_injectables)):
             injectable_param = remaining_injectables[injectable_param_index]
@@ -106,32 +142,32 @@ def prepare_action_params(action: callable, injectables: Tuple[InjectableParamet
 
             if comparison.is_strong_match:
                 result_args[signature_param_index] = injectable_param.value_factory
-                remaining_injectables = remaining_injectables[:injectable_param_index] \
-                                        + remaining_injectables[injectable_param_index + 1:]
+                remaining_injectables = tuple(i for i in remaining_injectables if i != injectable_param)
                 break
 
     # Then look for strong matches for keyword parameters
     result_kwargs: Dict[str, callable] = {}
     for signature_param in keyword_signature_params:
+        if not should_try_injection(signature_param):
+            continue
         for injectable_param_index in range(len(remaining_injectables)):
             injectable_param = remaining_injectables[injectable_param_index]
             comparison = injectable_param.compare_to(signature_param)
 
             if comparison.is_strong_match:
                 result_kwargs[signature_param.name] = injectable_param.value_factory
-                remaining_injectables = remaining_injectables[:injectable_param_index] \
-                                        + remaining_injectables[injectable_param_index + 1:]
+                remaining_injectables = tuple(i for i in remaining_injectables if i != injectable_param)
                 break
 
-        has_default_value = signature_param.default != inspect.Parameter.empty
-        if not has_default_value:
-            raise ValueError(f'Could not find a matching injectable for required parameter {signature_param.name} of {action.__name__}')
+
 
     # Then look for weak matches for positional parameters
     for signature_param_index in range(len(positional_signature_params)):
         signature_param = positional_signature_params[signature_param_index]
         if signature_param_index in result_args:
             continue
+        if not should_try_injection(signature_param):
+            continue
 
         for injectable_param_index in range(len(remaining_injectables)):
             injectable_param = remaining_injectables[injectable_param_index]
@@ -139,17 +175,20 @@ def prepare_action_params(action: callable, injectables: Tuple[InjectableParamet
 
             if comparison.is_weak_match:
                 result_args[signature_param_index] = injectable_param.value_factory
-                remaining_injectables = remaining_injectables[:injectable_param_index] \
-                                        + remaining_injectables[injectable_param_index + 1:]
+                remaining_injectables = tuple(i for i in remaining_injectables if i != injectable_param)
                 break
 
         has_default_value = signature_param.default != inspect.Parameter.empty
         if not has_default_value:
-            raise ValueError(f'Could not find a matching injectable for required parameter {signature_param.name} of {action.__name__}')
+            resolution_fallback_result = resolution_fallback(signature_param)
+            if resolution_fallback_result is not None:
+                result_kwargs[signature_param.name] = lambda: resolution_fallback_result
 
     # Then look for weak matches for keyword parameters
     for signature_param in keyword_signature_params:
         if signature_param.name in result_kwargs:
+            continue
+        if not should_try_injection(signature_param):
             continue
 
         for injectable_param_index in range(len(remaining_injectables)):
@@ -158,14 +197,15 @@ def prepare_action_params(action: callable, injectables: Tuple[InjectableParamet
 
             if comparison.is_weak_match:
                 result_kwargs[signature_param.name] = injectable_param.value_factory
-                remaining_injectables = remaining_injectables[:injectable_param_index] \
-                                        + remaining_injectables[injectable_param_index + 1:]
+                remaining_injectables = tuple(i for i in remaining_injectables if i != injectable_param)
                 break
 
         has_default_value = signature_param.default != inspect.Parameter.empty
         if not has_default_value:
-            raise ValueError(f'Could not find a matching injectable for required parameter {signature_param.name} of {action.__name__}')
+            resolution_fallback_result = resolution_fallback(signature_param)
+            if resolution_fallback_result is not None:
+                result_kwargs[signature_param.name] = lambda: resolution_fallback_result
 
-    result_args_values = tuple([result_args[i]() for i in range(len(result_args))])
+    result_args_values = tuple(result_args[i]() for i in range(len(result_args)))
     result_kwargs_values = {k: v() for k, v in result_kwargs.items()}
     return result_args_values, result_kwargs_values

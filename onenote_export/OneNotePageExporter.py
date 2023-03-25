@@ -1,39 +1,33 @@
 import functools
+from typing import Iterable
 
 import fitz
 import os
 import pathlib
 import re
 import shutil
-from typing import Callable
 import urllib
 
-from onenote import OneNotePage
-from .OneNoteExportMiddleware import OneNoteExportMiddleware
-from .OneNoteExportMiddlewarePartial import OneNoteExportMiddlewarePartial
+from .OneNoteExportTaskBase import OneNoteExportTaskBase
 from .OneNotePageAssetExportError import OneNotePageAssetExportError
-from .OneNotePageExportMiddlewareContext import OneNotePageExportMiddlewareContext
+from .OneNotePageExportTaskContext import OneNotePageExportTaskContext
 from .temporary_file import TemporaryFilePath
 from .type_variables import TReturn
 
 
-class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
-    def __init__(self):
-        pass
+class OneNotePageExporter(OneNoteExportTaskBase):
+    def __init__(self, context: OneNotePageExportTaskContext, prerequisites: Iterable['OneNoteExportTask']):
+        super().__init__(prerequisites)
+        self._context = context
 
-    def __call__(
-            self,
-            context: OneNotePageExportMiddlewareContext,
-            next_middleware: OneNoteExportMiddlewarePartial,
-    ) -> TReturn:
-        return self.export_page(context, next_middleware)
+    def _execute(self):
+        self.export_page(self._context)
 
     def export_page(
         self,
-        context: OneNotePageExportMiddlewareContext,
-        next_middleware: OneNoteExportMiddlewarePartial,
-    ) -> TReturn:
-        if not isinstance(context, OneNotePageExportMiddlewareContext):
+        context: OneNotePageExportTaskContext
+    ):
+        if not isinstance(context, OneNotePageExportTaskContext):
             raise TypeError(f"Context must be an instance of OneNotePageExportMiddlewareContext, not {type(context)}")
         logger = context.get_logger(__name__)
 
@@ -111,7 +105,7 @@ class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
                         for pdf_page_image in pdf_page.get_images():
                             xref = pdf_page_image[0]
                             pix = fitz.Pixmap(doc, xref)
-                            png_name = "%s_%s.png" % (context.safe_page_name, str(img_num).zfill(3))
+                            png_name = "%s_%s.png" % (context.safe_filename_base, str(img_num).zfill(3))
                             page_relative_png_path = context.assets_dir / pathlib.Path(png_name)
                             png_output_path = context.output_dir / page_relative_png_path
                             logger.debug("🖼️ Writing png: %s" % str(png_output_path))
@@ -147,10 +141,9 @@ class OneNotePageExporter(OneNoteExportMiddleware[OneNotePage, None]):
                 logger.info(f"📝️️ Updating image references in markdown: '{context.output_md_path}'")
                 _fix_image_names(image_names_extracted_from_pdf)
 
-                return next_middleware(context)
-
             _ensure_output_dir_exists()
             context.run_pandoc_conversion_to_markdown()
             _pdf_patch_images_into_md()
 
-            return next_middleware(context)
+
+OneNoteExportTaskBase.register(OneNotePageExporter)
