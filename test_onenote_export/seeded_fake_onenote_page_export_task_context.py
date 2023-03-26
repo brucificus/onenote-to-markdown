@@ -8,6 +8,7 @@ from onenote.OneNotePage import OneNotePage
 from onenote_export.Pathlike import Pathlike
 from onenote_export.OneNotePageExportTaskContext import OneNotePageExportTaskContext
 from onenote_export.temporary_file import TemporaryFilePath
+from pdf_inspection.PdfDocument import PdfDocument
 
 
 def create_seeded_fake_onenote_page_export_task_context(
@@ -54,7 +55,7 @@ def create_seeded_fake_onenote_page_export_task_context(
 
         test_run_sample_pdf_path = temp_working_dir / sample_pdf_path.name
         shutil.copy2(sample_pdf_path, test_run_sample_pdf_path)
-        mock_context.pymupdf_document = fitz.open(str(test_run_sample_pdf_path))
+        mock_context.page_as_pdf_document = PdfDocument(test_run_sample_pdf_path)
 
         # y? is anyone using this?
         test_run_sample_docx_path = temp_working_dir / sample_docx_path.name
@@ -68,8 +69,7 @@ def create_seeded_fake_onenote_page_export_task_context(
 
     def mock_context__exit__(_, exc_type, exc_val, exc_tb):
         try:
-            mock_context.pymupdf_document.close()
-            del mock_context.pymupdf_document
+            del mock_context.page_as_pdf_document
         finally:
             try:
                 shutil.rmtree(mock_context.temp_working_dir)
