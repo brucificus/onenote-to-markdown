@@ -35,5 +35,11 @@ class OneNoteOpenSections(OneNoteNode):
     def index(self) -> int:
         return self._index
 
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.name})"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.name!r})"
+
 
 OneNoteElementBasedNode.register(OneNoteOpenSections)
