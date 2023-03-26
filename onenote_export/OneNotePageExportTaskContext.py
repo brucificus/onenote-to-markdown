@@ -10,6 +10,7 @@ from onenote_export.OneNotePagePandocConversionError import OneNotePagePandocCon
 from onenote_export.OneNotePagePdfExportError import OneNotePagePdfExportError
 from onenote_export.TemporaryOneNotePageDocxExport import TemporaryOneNotePageDocxExport
 from onenote_export.TemporaryOneNotePagePdfExport import TemporaryOneNotePagePdfExport
+from pdf_inspection.PdfDocument import PdfDocument
 
 
 class OneNotePageExportTaskContext(OneNoteExportTaskContext[OneNotePage], ContextManager):
@@ -29,6 +30,8 @@ class OneNotePageExportTaskContext(OneNoteExportTaskContext[OneNotePage], Contex
         self._output_assets_dir_path = context.output_dir / context.assets_dir
         self._create_temporary_pdf_export_handler = functools.partial(create_temporary_pdf_export_handler, page)
         self._create_temporary_docx_export_handler = functools.partial(create_temporary_docx_export_handler, page)
+        self._temp_docx_export: TemporaryOneNotePageDocxExport = None
+        self._temp_pdf_export: TemporaryOneNotePagePdfExport = None
 
     @staticmethod
     def begin_export(context: OneNoteExportTaskContext[OneNotePage]) -> 'OneNotePageExportTaskContext':
@@ -94,10 +97,11 @@ class OneNotePageExportTaskContext(OneNoteExportTaskContext[OneNotePage], Contex
             raise OneNotePagePandocConversionError(self._page, e) from e
 
     @property
-    def pymupdf_document(self) -> 'fitz.Document':
+    @cache
+    def page_as_pdf_document(self) -> PdfDocument:
         if self._temp_pdf_export is None:
-            raise RuntimeError("OneNotePageExport must be entered before accessing pymupdf_document")
-        return self._temp_pdf_export.pymupdf_document
+            raise RuntimeError("OneNotePageExport must be entered before accessing page_as_pdf_document")
+        return self._temp_pdf_export.pdf_document
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._temp_pdf_export.__exit__(exc_type, exc_val, exc_tb)

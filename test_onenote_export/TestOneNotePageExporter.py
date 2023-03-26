@@ -27,8 +27,8 @@ class TestOneNotePageExporter(unittest.TestCase):
 
     @patch('onenote_export.TemporaryOneNotePageDocxExport', MagicMock(spec=TemporaryOneNotePageDocxExport))
     @patch('onenote_export.TemporaryOneNotePagePdfExport', MagicMock(spec=TemporaryOneNotePagePdfExport))
-    @patch('fitz.Document.__new__', MagicMock())
-    @patch('fitz.Pixmap', lambda _, __: fitz.Pixmap())
+    # @patch('fitz.Document.__new__', MagicMock())
+    # @patch('fitz.Pixmap', lambda _, __: fitz.Pixmap())
     @patch('onenote_export.OneNotePageExporter.open', mock_open(read_data='some data'))
     @patch('os.makedirs', lambda _, exist_ok: None)
     @patch('os.path.exists', lambda _: None)
