@@ -1,6 +1,6 @@
-from functools import cache
 from abc import ABC, abstractmethod
-from typing import Callable, Iterable
+from functools import cache
+from typing import Iterable
 from win32com import client as win32
 from xml.etree import ElementTree
 

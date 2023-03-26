@@ -35,7 +35,7 @@ class OneNoteExporter:
             else:
                 prereqs = ()
             prereqs = (t for t in prereqs if t is not None)
-            return self._task_factory.create_task(node, prereqs)
+            return self._task_factory.create_default_for_node_type(node, prereqs)
 
         def get_or_create_export_task(node: OneNoteNode) -> Optional[OneNoteExportTaskBase]:
             if node not in export_tasks:

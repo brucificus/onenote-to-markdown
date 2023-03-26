@@ -33,3 +33,9 @@ class OneNoteExportTaskContext(Generic[TNode]):
 
     def get_logger(self, module_name: str) -> logging.Logger:
         return get_logger(module_name=module_name, onenote_node=self.node)
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.node})"
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.node})"
