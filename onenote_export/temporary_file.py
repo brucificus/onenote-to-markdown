@@ -1,4 +1,5 @@
 import pathlib
+import shutil
 import tempfile
 from contextlib import contextmanager
 from typing import ContextManager
@@ -37,6 +38,6 @@ class TemporaryFilePath(ContextManager[pathlib.Path]):
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self._tempfile_path.exists():
             if self._tempfile_path.is_dir():
-                self._tempfile_path.rmdir()
+                shutil.rmtree(self._tempfile_path)
             else:
                 self._tempfile_path.unlink(missing_ok=True)
