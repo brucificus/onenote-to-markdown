@@ -1,5 +1,6 @@
-import subprocess
+from typing import Optional
 
+from markdown_dom.PandocMarkdownDocumentImportSettings import PandocMarkdownDocumentImportSettings
 from onenote import OneNotePage
 from onenote_export.Pathlike import Pathlike
 from onenote_export.TemporaryOneNotePageExportFile import TemporaryOneNotePageExportFile
@@ -7,19 +8,22 @@ from onenote_export.TemporaryOneNotePageExportKind import TemporaryOneNotePageEx
 
 
 class TemporaryOneNotePageDocxExport(TemporaryOneNotePageExportFile):
-    def __init__(self, page: OneNotePage, dir: Pathlike = None, subprocess_run: subprocess.run = subprocess.run):
+    def __init__(self, page: OneNotePage, dir: Pathlike = None):
         super().__init__(page, TemporaryOneNotePageExportKind.DOCX, dir)
-        self._subprocess_run = subprocess_run
 
-    def run_pandoc_conversion_to_markdown(self, output_md_path: Pathlike):
-        if self._tempfile_path is None:
-            raise RuntimeError("TemporaryOneNotePageDocxExport must be entered before calling run_pandoc_conversion_to_markdown")
+    def create_pandoc_ast_json(self,
+                               open_settings: PandocMarkdownDocumentImportSettings = PandocMarkdownDocumentImportSettings.create_default_for_onenote_docx(),
+                               cworkdir: Optional[Pathlike] = None,
+                               ) -> str:
+        if not self._tempfile_path:
+            raise Exception("Cannot create MarkdownDocument when TemporaryOneNotePageExportFile is not active.")
+        if not self._tempfile_path.exists():
+            raise FileNotFoundError(f"File {self._tempfile_path} does not exist")
+        if not isinstance(open_settings, PandocMarkdownDocumentImportSettings):
+            raise TypeError(f"open_settings must be an instance of PandocMarkdownDocumentImportSettings, not {type(open_settings)}")
 
-        pandoc_command = [
-            'pandoc',
-            '-i', str(self.tempfile_path),
-            '-o', str(output_md_path),
-            '-t', 'markdown-simple_tables-multiline_tables-grid_tables',
-            '--wrap=none',
-        ]
-        return self._subprocess_run(pandoc_command, check=True)
+        pandoc_ast_json = open_settings.execute_convert_docx_file_to_pandoc_ast_json_str(
+            input_docx_path=self._tempfile_path,
+            cworkdir=cworkdir,
+        )
+        return pandoc_ast_json

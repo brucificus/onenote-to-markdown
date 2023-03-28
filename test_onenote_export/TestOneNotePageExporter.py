@@ -3,6 +3,7 @@ import pathlib
 import unittest
 from unittest.mock import MagicMock, patch, mock_open
 
+from markdown_dom.MarkdownDocument import MarkdownDocument
 from onenote import OneNotePage, OneNoteSection, OneNoteSectionGroup, OneNoteNotebook, OneNoteApplication
 from onenote_export.OneNoteExportTaskContext import OneNoteExportTaskContext
 from onenote_export.OneNoteExportTaskFactory import OneNoteExportTaskFactory
@@ -59,6 +60,7 @@ class TestOneNotePageExporter(unittest.TestCase):
             basis_context,
             create_temporary_pdf_export_handler=lambda _: MagicMock(spec=TemporaryOneNotePagePdfExport),
             create_temporary_docx_export_handler=lambda _: MagicMock(spec=TemporaryOneNotePageDocxExport),
+            create_output_md_document=lambda _: MagicMock(spec=MarkdownDocument),
         )
         return context_param
 

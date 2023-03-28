@@ -1,0 +1,641 @@
+{
+  "pandoc-api-version": [1, 23],
+  "meta": {},
+  "blocks": [
+    {
+      "t": "Para",
+      "c": [
+        { "t": "Str", "c": "Asiago" },
+        { "t": "Space" },
+        { "t": "Str", "c": "Cheese" },
+        { "t": "Space" },
+        { "t": "Str", "c": "Crisps" }
+      ]
+    },
+    {
+      "t": "Para",
+      "c": [
+        { "t": "Str", "c": "Sunday," },
+        { "t": "Space" },
+        { "t": "Str", "c": "October" },
+        { "t": "Space" },
+        { "t": "Str", "c": "1," },
+        { "t": "Space" },
+        { "t": "Str", "c": "2017" }
+      ]
+    },
+    {
+      "t": "Para",
+      "c": [
+        { "t": "Str", "c": "8:36" },
+        { "t": "Space" },
+        { "t": "Str", "c": "PM" }
+      ]
+    },
+    {
+      "t": "Table",
+      "c": [
+        ["", [], []],
+        [null, []],
+        [
+          [{ "t": "AlignDefault" }, { "t": "ColWidth", "c": 0.55 }],
+          [{ "t": "AlignDefault" }, { "t": "ColWidth", "c": 0.44 }]
+        ],
+        [
+          ["", [], []],
+          [
+            [
+              ["", ["header"], []],
+              [
+                [
+                  ["", [], []],
+                  { "t": "AlignDefault" },
+                  1,
+                  1,
+                  [
+                    {
+                      "t": "Table",
+                      "c": [
+                        ["", [], []],
+                        [null, []],
+                        [
+                          [
+                            { "t": "AlignDefault" },
+                            { "t": "ColWidth", "c": 0.51 }
+                          ],
+                          [
+                            { "t": "AlignDefault" },
+                            { "t": "ColWidth", "c": 0.48 }
+                          ]
+                        ],
+                        [
+                          ["", [], []],
+                          [
+                            [
+                              ["", ["header"], []],
+                              [
+                                [
+                                  ["", [], []],
+                                  { "t": "AlignDefault" },
+                                  1,
+                                  1,
+                                  [
+                                    {
+                                      "t": "Plain",
+                                      "c": [
+                                        { "t": "Str", "c": " " },
+                                        {
+                                          "t": "Strong",
+                                          "c": [
+                                            { "t": "Str", "c": "Prep" },
+                                            { "t": "Space" },
+                                            { "t": "Str", "c": "Time" }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                ],
+                                [
+                                  ["", [], []],
+                                  { "t": "AlignDefault" },
+                                  1,
+                                  1,
+                                  [
+                                    {
+                                      "t": "Plain",
+                                      "c": [{ "t": "Str", "c": "10 minutes" }]
+                                    }
+                                  ]
+                                ]
+                              ]
+                            ]
+                          ]
+                        ],
+                        [[["", [], []], 0, [], []]],
+                        [["", [], []], []]
+                      ]
+                    },
+                    {
+                      "t": "Table",
+                      "c": [
+                        ["", [], []],
+                        [null, []],
+                        [
+                          [
+                            { "t": "AlignDefault" },
+                            { "t": "ColWidth", "c": 0.52 }
+                          ],
+                          [
+                            { "t": "AlignDefault" },
+                            { "t": "ColWidth", "c": 0.47 }
+                          ]
+                        ],
+                        [
+                          ["", [], []],
+                          [
+                            [
+                              ["", ["header"], []],
+                              [
+                                [
+                                  ["", [], []],
+                                  { "t": "AlignDefault" },
+                                  1,
+                                  1,
+                                  [
+                                    {
+                                      "t": "Plain",
+                                      "c": [
+                                        { "t": "Str", "c": " " },
+                                        {
+                                          "t": "Strong",
+                                          "c": [
+                                            { "t": "Str", "c": "Cook" },
+                                            { "t": "Space" },
+                                            { "t": "Str", "c": "Time" }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                ],
+                                [
+                                  ["", [], []],
+                                  { "t": "AlignDefault" },
+                                  1,
+                                  1,
+                                  [
+                                    {
+                                      "t": "Plain",
+                                      "c": [{ "t": "Str", "c": "20 minutes" }]
+                                    }
+                                  ]
+                                ]
+                              ]
+                            ]
+                          ]
+                        ],
+                        [[["", [], []], 0, [], []]],
+                        [["", [], []], []]
+                      ]
+                    },
+                    {
+                      "t": "Table",
+                      "c": [
+                        ["", [], []],
+                        [null, []],
+                        [
+                          [
+                            { "t": "AlignDefault" },
+                            { "t": "ColWidth", "c": 0.59 }
+                          ],
+                          [
+                            { "t": "AlignDefault" },
+                            { "t": "ColWidth", "c": 0.4 }
+                          ]
+                        ],
+                        [
+                          ["", [], []],
+                          [
+                            [
+                              ["", ["header"], []],
+                              [
+                                [
+                                  ["", [], []],
+                                  { "t": "AlignDefault" },
+                                  1,
+                                  1,
+                                  [
+                                    {
+                                      "t": "Plain",
+                                      "c": [
+                                        { "t": "Str", "c": " " },
+                                        {
+                                          "t": "Strong",
+                                          "c": [{ "t": "Str", "c": "Servings" }]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                ],
+                                [
+                                  ["", [], []],
+                                  { "t": "AlignDefault" },
+                                  1,
+                                  1,
+                                  [
+                                    {
+                                      "t": "Plain",
+                                      "c": [{ "t": "Str", "c": " crisps" }]
+                                    }
+                                  ]
+                                ]
+                              ]
+                            ]
+                          ]
+                        ],
+                        [[["", [], []], 0, [], []]],
+                        [["", [], []], []]
+                      ]
+                    },
+                    {
+                      "t": "BlockQuote",
+                      "c": [
+                        {
+                          "t": "Para",
+                          "c": [{ "t": "Str", "c": "INGREDIENTS" }]
+                        }
+                      ]
+                    },
+                    {
+                      "t": "BulletList",
+                      "c": [
+                        [
+                          {
+                            "t": "BlockQuote",
+                            "c": [
+                              {
+                                "t": "Para",
+                                "c": [
+                                  { "t": "Str", "c": "3/4 cups " },
+                                  {
+                                    "t": "Link",
+                                    "c": [
+                                      ["", [], []],
+                                      [
+                                        { "t": "Str", "c": "shredded" },
+                                        { "t": "Space" },
+                                        { "t": "Str", "c": "cheese" }
+                                      ],
+                                      [
+                                        "http://blog.2keto.com/ingredient/shredded-cheese/",
+                                        ""
+                                      ]
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ],
+                        [
+                          {
+                            "t": "BlockQuote",
+                            "c": [
+                              {
+                                "t": "Para",
+                                "c": [
+                                  { "t": "Str", "c": "2 tbsp " },
+                                  {
+                                    "t": "Link",
+                                    "c": [
+                                      ["", [], []],
+                                      [
+                                        { "t": "Str", "c": "garlic" },
+                                        { "t": "Space" },
+                                        { "t": "Str", "c": "powder" }
+                                      ],
+                                      [
+                                        "http://blog.2keto.com/ingredient/garlic-powder/",
+                                        ""
+                                      ]
+                                    ]
+                                  },
+                                  { "t": "Str", "c": " (optional)" }
+                                ]
+                              }
+                            ]
+                          }
+                        ],
+                        [
+                          {
+                            "t": "BlockQuote",
+                            "c": [
+                              {
+                                "t": "Para",
+                                "c": [
+                                  { "t": "Str", "c": "2 tbsp " },
+                                  {
+                                    "t": "Link",
+                                    "c": [
+                                      ["", [], []],
+                                      [
+                                        { "t": "Str", "c": "Italian" },
+                                        { "t": "Space" },
+                                        { "t": "Str", "c": "seasoning" }
+                                      ],
+                                      [
+                                        "http://blog.2keto.com/ingredient/italian-seasoning/",
+                                        ""
+                                      ]
+                                    ]
+                                  },
+                                  { "t": "Str", "c": " (optional)" }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      ]
+                    }
+                  ]
+                ],
+                [
+                  ["", [], []],
+                  { "t": "AlignDefault" },
+                  1,
+                  1,
+                  [
+                    {
+                      "t": "Plain",
+                      "c": [
+                        {
+                          "t": "Image",
+                          "c": [
+                            [
+                              "",
+                              [],
+                              [["style", "width:1.875in;height:1.875in"]]
+                            ],
+                            [],
+                            ["media/image1.jpg", ""]
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ],
+        [[["", [], []], 0, [], []]],
+        [["", [], []], []]
+      ]
+    },
+    {
+      "t": "BlockQuote",
+      "c": [{ "t": "Para", "c": [{ "t": "Str", "c": "INSTRUCTIONS" }] }]
+    },
+    {
+      "t": "BulletList",
+      "c": [
+        [
+          {
+            "t": "Para",
+            "c": [
+              { "t": "Str", "c": "Preheat" },
+              { "t": "Space" },
+              { "t": "Str", "c": "oven" },
+              { "t": "Space" },
+              { "t": "Str", "c": "to" },
+              { "t": "Space" },
+              { "t": "Str", "c": "300" },
+              { "t": "Space" },
+              { "t": "Str", "c": "F" }
+            ]
+          }
+        ],
+        [
+          {
+            "t": "Para",
+            "c": [
+              { "t": "Str", "c": "Place" },
+              { "t": "Space" },
+              { "t": "Str", "c": "parchment" },
+              { "t": "Space" },
+              { "t": "Str", "c": "on" },
+              { "t": "Space" },
+              { "t": "Str", "c": "cookie" },
+              { "t": "Space" },
+              { "t": "Str", "c": "sheet," },
+              { "t": "Space" },
+              { "t": "Str", "c": "covering" },
+              { "t": "Space" },
+              { "t": "Str", "c": "it" }
+            ]
+          }
+        ],
+        [
+          {
+            "t": "Para",
+            "c": [
+              { "t": "Str", "c": "Grab" },
+              { "t": "Space" },
+              { "t": "Str", "c": "a" },
+              { "t": "Space" },
+              { "t": "Str", "c": "pinch" },
+              { "t": "Space" },
+              { "t": "Str", "c": "of" },
+              { "t": "Space" },
+              { "t": "Str", "c": "cheese" },
+              { "t": "Space" },
+              { "t": "Str", "c": "(about" },
+              { "t": "Space" },
+              { "t": "Str", "c": "a" },
+              { "t": "Space" },
+              { "t": "Str", "c": "tablespoon)" },
+              { "t": "Space" },
+              { "t": "Str", "c": "and" },
+              { "t": "Space" },
+              { "t": "Str", "c": "plop" },
+              { "t": "Space" },
+              { "t": "Str", "c": "it" },
+              { "t": "Space" },
+              { "t": "Str", "c": "down" },
+              { "t": "Space" },
+              { "t": "Str", "c": "in" },
+              { "t": "Space" },
+              { "t": "Str", "c": "the" },
+              { "t": "Space" },
+              { "t": "Str", "c": "corner." },
+              { "t": "Space" },
+              { "t": "Str", "c": "It" },
+              { "t": "Space" },
+              { "t": "Str", "c": "will" },
+              { "t": "Space" },
+              { "t": "Str", "c": "spread," },
+              { "t": "Space" },
+              { "t": "Str", "c": "but" },
+              { "t": "Space" },
+              { "t": "Str", "c": "try" },
+              { "t": "Space" },
+              { "t": "Str", "c": "to" },
+              { "t": "Space" },
+              { "t": "Str", "c": "even" },
+              { "t": "Space" },
+              { "t": "Str", "c": "it" },
+              { "t": "Space" },
+              { "t": "Str", "c": "out" },
+              { "t": "Space" },
+              { "t": "Str", "c": "a" },
+              { "t": "Space" },
+              { "t": "Str", "c": "bit," },
+              { "t": "Space" },
+              { "t": "Str", "c": "otherwise" },
+              { "t": "Space" },
+              { "t": "Str", "c": "it" },
+              { "t": "Space" },
+              { "t": "Str", "c": "won't" },
+              { "t": "Space" },
+              { "t": "Str", "c": "be" },
+              { "t": "Space" },
+              { "t": "Str", "c": "cripsy" },
+              { "t": "Space" },
+              { "t": "Str", "c": "in" },
+              { "t": "Space" },
+              { "t": "Str", "c": "the" },
+              { "t": "Space" },
+              { "t": "Str", "c": "middle" }
+            ]
+          }
+        ],
+        [
+          {
+            "t": "Para",
+            "c": [
+              { "t": "Str", "c": "Repeat," },
+              { "t": "Space" },
+              { "t": "Str", "c": "making" },
+              { "t": "Space" },
+              { "t": "Str", "c": "12" },
+              { "t": "Space" },
+              { "t": "Str", "c": "distinct" },
+              { "t": "Space" },
+              { "t": "Str", "c": "piles" },
+              { "t": "Space" },
+              { "t": "Str", "c": "on" },
+              { "t": "Space" },
+              { "t": "Str", "c": "the" },
+              { "t": "Space" },
+              { "t": "Str", "c": "cookie" },
+              { "t": "Space" },
+              { "t": "Str", "c": "sheet" }
+            ]
+          }
+        ],
+        [
+          {
+            "t": "Para",
+            "c": [
+              { "t": "Str", "c": "Optionally" },
+              { "t": "Space" },
+              { "t": "Str", "c": "sprinkle" },
+              { "t": "Space" },
+              { "t": "Str", "c": "garlic" },
+              { "t": "Space" },
+              { "t": "Str", "c": "powder" },
+              { "t": "Space" },
+              { "t": "Str", "c": "and/or" },
+              { "t": "Space" },
+              { "t": "Str", "c": "seasoning" },
+              { "t": "Space" },
+              { "t": "Str", "c": "on" },
+              { "t": "Space" },
+              { "t": "Str", "c": "each" },
+              { "t": "Space" },
+              { "t": "Str", "c": "pile" }
+            ]
+          }
+        ],
+        [
+          {
+            "t": "Para",
+            "c": [
+              { "t": "Str", "c": "Bake" },
+              { "t": "Space" },
+              { "t": "Str", "c": "for" },
+              { "t": "Space" },
+              { "t": "Str", "c": "18-20" },
+              { "t": "Space" },
+              { "t": "Str", "c": "minutes" },
+              { "t": "Space" },
+              { "t": "Str", "c": "or" },
+              { "t": "Space" },
+              { "t": "Str", "c": "until" },
+              { "t": "Space" },
+              { "t": "Str", "c": "the" },
+              { "t": "Space" },
+              { "t": "Str", "c": "entire" },
+              { "t": "Space" },
+              { "t": "Str", "c": "crisp" },
+              { "t": "Space" },
+              { "t": "Str", "c": "has" },
+              { "t": "Space" },
+              { "t": "Str", "c": "turned" },
+              { "t": "Space" },
+              { "t": "Str", "c": "brown" },
+              { "t": "Space" },
+              { "t": "Str", "c": "and" },
+              { "t": "Space" },
+              { "t": "Str", "c": "crispy" }
+            ]
+          }
+        ],
+        [
+          {
+            "t": "Para",
+            "c": [
+              { "t": "Str", "c": "Remove" },
+              { "t": "Space" },
+              { "t": "Str", "c": "and" },
+              { "t": "Space" },
+              { "t": "Str", "c": "place" },
+              { "t": "Space" },
+              { "t": "Str", "c": "on" },
+              { "t": "Space" },
+              { "t": "Str", "c": "a" },
+              { "t": "Space" },
+              { "t": "Str", "c": "plate" },
+              { "t": "Space" },
+              { "t": "Str", "c": "or" },
+              { "t": "Space" },
+              { "t": "Str", "c": "rack" },
+              { "t": "Space" },
+              { "t": "Str", "c": "to" },
+              { "t": "Space" },
+              { "t": "Str", "c": "cool" }
+            ]
+          }
+        ]
+      ]
+    },
+    {
+      "t": "BlockQuote",
+      "c": [
+        { "t": "Para", "c": [{ "t": "Str", "c": " " }] },
+        {
+          "t": "Para",
+          "c": [
+            {
+              "t": "Emph",
+              "c": [
+                { "t": "Str", "c": "From" },
+                { "t": "Space" },
+                { "t": "Str", "c": "<" },
+                {
+                  "t": "Link",
+                  "c": [
+                    ["", ["uri"], []],
+                    [
+                      {
+                        "t": "Str",
+                        "c": "http://blog.2keto.com/recipe/asiago-or-other-cheese-crisps/"
+                      }
+                    ],
+                    [
+                      "http://blog.2keto.com/recipe/asiago-or-other-cheese-crisps/",
+                      ""
+                    ]
+                  ]
+                },
+                { "t": "Str", "c": ">" }
+              ]
+            }
+          ]
+        },
+        { "t": "Para", "c": [{ "t": "Str", "c": " " }] }
+      ]
+    }
+  ]
+}

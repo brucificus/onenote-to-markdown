@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 from fitz import fitz
 
+from markdown_dom.MarkdownDocument import MarkdownDocument
 from onenote.OneNotePage import OneNotePage
 from onenote_export.Pathlike import Pathlike
 from onenote_export.OneNotePageExportTaskContext import OneNotePageExportTaskContext
@@ -36,6 +37,7 @@ def create_seeded_fake_onenote_page_export_task_context(
     mock_context.page_node_id = mock_page.node_id
     mock_context.page_route = mock_page.route
     mock_context.safe_filename_base = mock_page.name
+    mock_context.output_md_document = MagicMock(spec=MarkdownDocument)
 
     pretend_output_dir_handler = TemporaryFilePath(suffix='', prefix='tmp')
     temp_working_dir_handler = TemporaryFilePath(suffix='', prefix='tmp')
@@ -64,6 +66,8 @@ def create_seeded_fake_onenote_page_export_task_context(
         test_run_sample_md_path = pretend_output_dir / sample_md_path.name
         shutil.copy2(sample_md_path, test_run_sample_md_path)
         mock_context.output_md_path = test_run_sample_md_path
+
+        mock_context.output_md_document = MarkdownDocument.import_md_file(test_run_sample_md_path)
 
         return mock_context
 

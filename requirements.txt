@@ -1,4 +1,6 @@
+panflute
 pylint
 pymupdf
+pypandoc_binary
 pytest
 pywin32

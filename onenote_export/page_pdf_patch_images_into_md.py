@@ -1,9 +1,12 @@
+import functools
 import logging
 import pathlib
-import re
-import shutil
 import urllib
+from typing import Tuple, Optional
 
+import panflute
+
+from markdown_dom.MarkdownDocument import PanfluteElementFilter
 from onenote_export.OneNotePageExportTaskContext import OneNotePageExportTaskContext
 from pdf_inspection.PdfDocumentPage import PdfDocumentPage
 
@@ -35,20 +38,33 @@ def page_pdf_patch_images_into_md(context: OneNotePageExportTaskContext, logger:
                     f"⚠️ Page {pdf_page.page_index} of the PDF for '{context.output_md_path}' has {count_of_non_ignorable_drawings} non-empty drawings that are not exported.")
         return result_image_names
 
+    broken_image_url_prefix = "media/image"
+
+    def is_image_with_broken_url(element: panflute.Element, _) -> bool:
+        return isinstance(element, panflute.Image) and element.url.startswith(broken_image_url_prefix)
+
+    def _count_broken_images(doc: panflute.Doc) -> int:
+        return doc.count_elements(is_image_with_broken_url)
+
     def _fix_image_names(image_names_to_fix: list[pathlib.Path]):
-        tmp_path = context.output_md_path.with_suffix(context.output_md_path.suffix + '.tmp')
-        i = 0
-        with open(context.output_md_path, 'r', encoding='utf-8') as f_md:
-            with open(tmp_path, 'w', encoding='utf-8') as f_tmp:
-                body_md = f_md.read()
-                for i, path in enumerate(image_names_to_fix):
-                    path_str_for_sub = urllib.parse.quote(str(path).encode('utf8'), safe='\\').replace('\\', '/')
-                    body_md = re.sub("media/image" + str(i + 1) + r"\.\w+", path_str_for_sub, body_md)
-                f_tmp.write(body_md)
-                body_remaining_broken_image_count = len(re.findall(r"media/image\d+\.\w+", body_md))
-                if body_remaining_broken_image_count > 0:
-                    logger.warning(f"⚠️ Still has broken images: '{context.output_md_path}'")
-        shutil.move(tmp_path, context.output_md_path)
+        doc = context.output_md_document
+        element_filters: Tuple[PanfluteElementFilter, ...] = ()
+
+        def update_image_url(element: panflute.Element, _, new_image_url: str, image_index: int) -> Optional[panflute.Element]:
+            if is_image_with_broken_url(element, _):
+                broken_image_path_without_suffix_letters = broken_image_url_prefix + str(image_index + 1) + "."
+                if element.url.startswith(broken_image_path_without_suffix_letters):
+                    element.url = new_image_url
+
+        for i, path in enumerate(image_names_to_fix):
+            path_str = urllib.parse.quote(str(path).encode('utf8'), safe='\\').replace('\\', '/')
+            element_filters += (functools.partial(update_image_url, new_image_url=path_str, image_index=i),)
+
+        doc.update_via_panflute_filters(element_filters=element_filters)
+        remaining_broken_image_count = _count_broken_images(doc)
+
+        if remaining_broken_image_count > 0:
+            logger.warning(f"⚠️ Still has broken images: '{context.output_md_path}'")
 
     # Output picture assets to folder.
     logger.info(f"✂️️ Extracting PDF pictures: '{context.output_md_path}'")
