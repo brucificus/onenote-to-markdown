@@ -27,8 +27,7 @@ class OneNoteUnfiledNotes(OneNoteNode):
         return 'Unfiled Notes'
 
     @property
-    @cache
-    def path(self) -> tuple[str, ...]:
+    def route(self) -> tuple[str, ...]:
         return (self.name,)
 
     @property

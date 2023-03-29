@@ -27,8 +27,7 @@ class OneNoteOpenSections(OneNoteNode):
         return 'Open Sections'
 
     @property
-    @cache
-    def path(self) -> tuple[str, ...]:
+    def route(self) -> tuple[str, ...]:
         return (self.name,)
 
     @property
