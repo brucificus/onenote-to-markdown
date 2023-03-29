@@ -1,3 +1,4 @@
+import functools
 import logging
 import os
 import re
@@ -18,17 +19,33 @@ if LOGFILE:
     fh = logging.FileHandler(LOGFILE, mode='w', encoding='utf-8', delay=True)
     fh.setLevel(logging.WARNING)
     logging.root.addHandler(fh)
-# For debugging purposes, set this variable to limit which pages are exported:
+# For debugging purposes, set either or both of these variables to limit which pages are exported:
 EXPORT_EXCLUSION_FILTER = r''
+EXPORT_INCLUSION_FILTER = r''
 
 
 def should_handle(node: OneNoteNode) -> bool:
-    if not EXPORT_EXCLUSION_FILTER or len(EXPORT_EXCLUSION_FILTER) == 0:
+    if (not EXPORT_EXCLUSION_FILTER or len(EXPORT_EXCLUSION_FILTER) == 0) \
+        and (not EXPORT_INCLUSION_FILTER or len(EXPORT_INCLUSION_FILTER) == 0
+    ):
         return True
-    if isinstance(node, OneNoteElementBasedNode):
-        route_as_lines = os.linesep.join(node.route)
-        search_result = re.findall(pattern=EXPORT_EXCLUSION_FILTER, string=route_as_lines, flags= re.IGNORECASE | re.MULTILINE)
-        return not search_result or len(search_result) == 0
+
+    if not isinstance(node, OneNoteElementBasedNode):
+        return True
+
+    route_as_lines = os.linesep.join(node.route)
+    search = functools.partial(re.findall, string=route_as_lines, flags=re.IGNORECASE | re.MULTILINE)
+
+    if EXPORT_INCLUSION_FILTER and len(EXPORT_INCLUSION_FILTER) > 0:
+        inclusion_search_result = search(EXPORT_INCLUSION_FILTER)
+        if len(inclusion_search_result) == 0:
+            return False
+
+    if EXPORT_EXCLUSION_FILTER and len(EXPORT_EXCLUSION_FILTER) > 0:
+        exclusion_search_result = search(EXPORT_EXCLUSION_FILTER)
+        if len(exclusion_search_result) > 0:
+            return False
+
     return True
 
 
