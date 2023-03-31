@@ -35,7 +35,7 @@ def page_pdf_patch_images_into_md(context: OneNotePageExportTaskContext, logger:
             count_of_non_ignorable_drawings = _count_non_ignorable_drawings(pdf_page)
             if count_of_non_ignorable_drawings > 0:
                 logger.warning(
-                    f"⚠️ Page {pdf_page.page_index} of the PDF for '{context.output_md_path}' has {count_of_non_ignorable_drawings} non-empty drawings that are not exported.")
+                    f"⚠️ Page {pdf_page.page_index + 1} of the PDF for '{context.output_md_path}' has {count_of_non_ignorable_drawings} non-empty drawings that are not exported.")
         return result_image_names
 
     broken_image_url_prefix = "media/image"
