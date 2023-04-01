@@ -10,6 +10,7 @@ from onenote_export.OneNoteExportTaskFactory import OneNoteExportTaskFactory
 from onenote_export.OneNotePageExportTaskContext import OneNotePageExportTaskContext
 from onenote_export.OneNotePageExporter import OneNotePageExporter
 from onenote_export.TemporaryOneNotePageDocxExport import TemporaryOneNotePageDocxExport
+from onenote_export.TemporaryOneNotePageMhtmlExport import TemporaryOneNotePageMhtmlExport
 from onenote_export.TemporaryOneNotePagePdfExport import TemporaryOneNotePagePdfExport
 from path_scrubbing import PathComponentScrubber
 
@@ -60,6 +61,7 @@ class TestOneNotePageExporter(unittest.TestCase):
             basis_context,
             create_temporary_pdf_export_handler=lambda _: MagicMock(spec=TemporaryOneNotePagePdfExport),
             create_temporary_docx_export_handler=lambda _: MagicMock(spec=TemporaryOneNotePageDocxExport),
+            create_temporary_mhtml_export_handler=lambda _: MagicMock(spec=TemporaryOneNotePageMhtmlExport),
             create_output_md_document=lambda _: MagicMock(spec=MarkdownDocument),
         )
         return context_param

@@ -28,6 +28,12 @@ default_input_format_and_extensions_for_obsidian_md_to_ast_json = PandocFormatAn
 )
 default_extra_args_for_obsidian_md_to_ast_json = default_extra_args_for_onenote_docx_to_obsidian_md
 
+default_input_format_and_extensions_for_onenote_html_to_ast_json = PandocFormatAndExtensions(
+    format=PandocFormat.html,
+    extensions='+task_lists',
+)
+default_extra_args_for_onenote_html_to_ast_json = default_extra_args_for_onenote_docx_to_obsidian_md
+
 
 class PandocMarkdownDocumentImportSettings:
     def __init__(self,
@@ -112,6 +118,31 @@ class PandocMarkdownDocumentImportSettings:
         assert isinstance(result, str) and len(result) > 0, f"Unexpected result from pypandoc.convert_file: {result}"
         return result
 
+    def execute_convert_html_file_to_pandoc_ast_json_str(self, input_html_path: Pathlike, extra_args: Optional[Tuple[str, ...]] = None, cworkdir: Optional[Pathlike] = None) -> str:
+        if not isinstance(input_html_path, str) and not isinstance(input_html_path, pathlib.Path):
+            raise TypeError(f"input_html_path must be a str or a pathlib.Path, not {type(input_html_path)}")
+        if extra_args is not None and not isinstance(extra_args, tuple):
+            raise TypeError(f"extra_args must be a tuple, not {type(extra_args)}")
+        if cworkdir is not None and not isinstance(cworkdir, str) and not isinstance(cworkdir, pathlib.Path):
+            raise TypeError(f"cworkdir must be a str or a pathlib.Path, not {type(cworkdir)}")
+
+        extra_args_to_use = self.extra_args
+        if extra_args is not None:
+            extra_args_to_use = extra_args_to_use + extra_args
+        if cworkdir is pathlib.Path:
+            cworkdir = str(cworkdir)
+
+        result = pypandoc.convert_file(
+            source_file=input_html_path,
+            format=str(self._input_format_and_extensions),
+            to=str(PandocFormat.json),
+            extra_args=extra_args_to_use,
+            encoding='utf-8',
+            cworkdir=cworkdir,
+        )
+        assert isinstance(result, str) and len(result) > 0, f"Unexpected result from pypandoc.convert_file: {result}"
+        return result
+
     @staticmethod
     def create_default_for_onenote_docx() -> 'PandocMarkdownDocumentImportSettings':
         return PandocMarkdownDocumentImportSettings(
@@ -125,5 +156,13 @@ class PandocMarkdownDocumentImportSettings:
         return PandocMarkdownDocumentImportSettings(
             input_format_and_extensions=default_input_format_and_extensions_for_obsidian_md_to_ast_json,
             extra_args=default_extra_args_for_obsidian_md_to_ast_json,
+            pandoc_path=pypandoc.get_pandoc_path(),
+        )
+
+    @staticmethod
+    def create_default_for_onenote_html() -> 'PandocMarkdownDocumentImportSettings':
+        return PandocMarkdownDocumentImportSettings(
+            input_format_and_extensions=default_input_format_and_extensions_for_onenote_html_to_ast_json,
+            extra_args=default_extra_args_for_onenote_html_to_ast_json,
             pandoc_path=pypandoc.get_pandoc_path(),
         )

@@ -169,3 +169,12 @@ class PandocMarkdownDocumentExportSettings:
             extra_args=default_extra_args_for_onenote_docx_to_obsidian_md,
             pandoc_path=pypandoc.get_pandoc_path(),
         )
+
+
+    @staticmethod
+    def create_default_for_onenote_html_to_obsidian_md() -> 'PandocMarkdownDocumentExportSettings':
+        return PandocMarkdownDocumentExportSettings(
+            output_format_and_extensions=default_output_format_and_extensions_for_onenote_docx_to_obsidian_md,
+            extra_args=default_extra_args_for_onenote_docx_to_obsidian_md,
+            pandoc_path=pypandoc.get_pandoc_path(),
+        )

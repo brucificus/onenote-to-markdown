@@ -1,9 +1,12 @@
 import pathlib
+
 from typing import ContextManager
 
+from mhtml_dom.MhtmlContainer import MhtmlContainer
 from onenote import OneNotePage
 from onenote_export import temporary_file
 from onenote_export.Pathlike import Pathlike
+from onenote_export.temporary_file import TemporaryFilePath
 from onenote_export.TemporaryOneNotePageExportKind import TemporaryOneNotePageExportKind
 
 
@@ -18,14 +21,27 @@ class TemporaryOneNotePageExportFile(temporary_file.TemporaryFilePath, ContextMa
         self._kind = kind
 
     def __enter__(self):
-        self._tempfile_path = super().__enter__()
         if self._kind == TemporaryOneNotePageExportKind.PDF:
+            self._tempfile_path = super().__enter__()
             self._page._export_pdf(self._tempfile_path)
-        elif self._kind == TemporaryOneNotePageExportKind.DOCX:
+            return self._tempfile_path
+
+        if self._kind == TemporaryOneNotePageExportKind.DOCX:
+            self._tempfile_path = super().__enter__()
             self._page._export_docx(self._tempfile_path)
-        else:
-            raise ValueError(f"Unknown kind: {self._kind}")
-        return self._tempfile_path
+            return self._tempfile_path
+
+        if self._kind == TemporaryOneNotePageExportKind.MHTML:
+            mhtml_extraction_dir = super().__enter__()
+            self._tempfile_path = mhtml_extraction_dir
+            with TemporaryFilePath(suffix='.mht') as mhtml_file:
+                self._page._export_mhtml(mhtml_file)
+                mhtml_container = MhtmlContainer.read_file(mhtml_file)
+                mhtml_container.extractall(mhtml_extraction_dir)
+            return self._tempfile_path
+
+        raise ValueError(f"Unknown kind: {self._kind}")
+
 
     @property
     def tempfile_path(self) -> pathlib.Path:
