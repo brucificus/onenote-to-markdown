@@ -50,7 +50,9 @@ class TestOneNoteExportTaskContextFactory(unittest.TestCase):
             pathlib.Path(),  # page_relative_assets_dir
             MagicMock(spec=PathComponentScrubber),  # path_component_scrubber
         )
-        subject_ctor_kwargs = {}
+        subject_ctor_kwargs = {
+            'use_legacy_docx_export': False,
+        }
 
         actual = OneNoteExportTaskContextFactory(*subject_ctor_args, **subject_ctor_kwargs)
         return actual

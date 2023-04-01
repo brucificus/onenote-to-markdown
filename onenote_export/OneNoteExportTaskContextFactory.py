@@ -12,12 +12,14 @@ class OneNoteExportTaskContextFactory:
                  root_output_dir: Pathlike,
                  page_relative_assets_dir: Pathlike,
                  path_component_scrubber: Callable[[str], pathlib.Path],
+                 use_legacy_docx_export: bool,
                  ):
         self._root_output_dir =\
             pathlib.Path(root_output_dir) if isinstance(root_output_dir, str) else root_output_dir
         self._page_relative_assets_dir =\
             pathlib.Path(page_relative_assets_dir) if isinstance(page_relative_assets_dir, str) else page_relative_assets_dir
         self._path_component_scrubber = path_component_scrubber
+        self._use_legacy_docx_export = use_legacy_docx_export
 
     @staticmethod
     def _is_output_dir_step_down(current_context: OneNoteExportTaskContext[OneNoteNode], child: OneNoteNode) -> bool:
@@ -40,7 +42,7 @@ class OneNoteExportTaskContextFactory:
         )
 
         if isinstance(child, OneNotePage):
-            child_context = OneNotePageExportTaskContext.begin_export(child_context)
+            child_context = OneNotePageExportTaskContext.begin_export(child_context, use_legacy_docx_export=self._use_legacy_docx_export)
 
         return child_context
 

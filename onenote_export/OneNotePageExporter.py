@@ -12,7 +12,11 @@ from .OneNotePageExportTaskContext import OneNotePageExportTaskContext
 
 
 class OneNotePageExporter(OneNoteExportTaskBase):
-    def __init__(self, context: OneNotePageExportTaskContext, prerequisites: Iterable[OneNoteExportTaskBase], subtask_factory: OneNoteExportTaskFactory):
+    def __init__(self,
+                 context: OneNotePageExportTaskContext,
+                 prerequisites: Iterable[OneNoteExportTaskBase],
+                 subtask_factory: OneNoteExportTaskFactory,
+                 ):
         super().__init__(prerequisites)
         if not isinstance(context, OneNotePageExportTaskContext):
             raise TypeError(f"Context must be an instance of OneNotePageExportMiddlewareContext, not {type(context)}")

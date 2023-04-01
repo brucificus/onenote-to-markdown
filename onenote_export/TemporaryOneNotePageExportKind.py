@@ -5,3 +5,4 @@ from enum import Enum, unique
 class TemporaryOneNotePageExportKind(str, Enum):
     PDF = 'pdf'
     DOCX = 'docx'
+    MHTML = 'mht'

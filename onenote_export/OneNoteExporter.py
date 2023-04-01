@@ -92,12 +92,14 @@ def create_default_onenote_exporter(
     root_output_dir: Pathlike,
     page_relative_assets_dir: Pathlike,
     path_component_scrubber: Callable[[str], pathlib.Path],
-    should_export: Callable[[OneNoteNode], bool] = lambda node: True
+    should_export: Callable[[OneNoteNode], bool] = lambda node: True,
+    use_legacy_docx_export: bool = False,
 ) -> 'OneNoteExporter':
     context_factory = OneNoteExportTaskContextFactory(
         root_output_dir=root_output_dir,
         page_relative_assets_dir=page_relative_assets_dir,
         path_component_scrubber=path_component_scrubber,
+        use_legacy_docx_export=use_legacy_docx_export,
     )
 
     return OneNoteExporter(
