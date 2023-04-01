@@ -3,31 +3,48 @@ from datetime import datetime
 from functools import cache
 from itertools import takewhile
 from typing import Iterable
-from win32com import client as win32
 from xml.etree import ElementTree
 
+from onenote_export.Pathlike import Pathlike
+from .OneNoteAPI import OneNoteAPI
 from .OneNoteElementBasedNode import OneNoteElementBasedNode
+from .PublishFormat import PublishFormat
 from .retry_com import retry_com
 
 
 class OneNotePage(OneNoteElementBasedNode):
-    def __init__(self, element: ElementTree, parent: OneNoteElementBasedNode, index: int, app: win32.CDispatch = None):
+    def __init__(self, element: ElementTree, parent: OneNoteElementBasedNode, index: int, onenote_api: OneNoteAPI = None):
         if not isinstance(parent, OneNoteElementBasedNode):
             raise ValueError(f'Unexpected parent type: {type(parent)}')
-        super().__init__(element, parent, index, app)
+        super().__init__(element, parent, index, onenote_api)
 
     @property
     @cache
     def is_subpage(self) -> bool:
         return 'isSubPage' in self._element.attrib and self._element.attrib['isSubPage'] == 'true'
 
-    @retry_com
-    def _export_docx(self, path: pathlib.Path):
-        self._app.Publish(self.node_id, str(path), win32.constants.pfWord, "")
+    def __export(self, path: Pathlike, publish_format: PublishFormat):
+        self._onenote_api.publish(self.node_id, path, publish_format)
 
-    @retry_com
+    def _export_docx(self, path: pathlib.Path):
+        if not path.suffix == '.docx':
+            raise ValueError(f"Expected path suffix '.docx', got: {path.suffix}")
+        self.__export(path, PublishFormat.pfWord)
+
     def _export_pdf(self, path: pathlib.Path):
-        self._app.Publish(self.node_id, str(path), 3, "")
+        if not path.suffix == '.pdf':
+            raise ValueError(f"Expected path suffix '.pdf', got: {path.suffix}")
+        self.__export(path, PublishFormat.pfPDF)
+
+    def _export_xps(self, path: pathlib.Path):
+        if not path.suffix == '.xps':
+            raise ValueError(f"Expected path suffix '.xps', got: {path.suffix}")
+        self.__export(path, PublishFormat.pfXPS)
+
+    def _export_mhtml(self, path: pathlib.Path):
+        if path.suffix not in ('.mhtml', '.mht'):
+            raise ValueError(f"Expected path suffix '.mhtml' or '.mht', got: {path.suffix}")
+        self.__export(path, PublishFormat.pfMHTML)
 
     def _get_subpages(self) -> Iterable['OneNotePage']:
         if self.is_subpage:
