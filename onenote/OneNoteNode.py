@@ -1,27 +1,23 @@
 from abc import ABC, abstractmethod
 from functools import cache
 from typing import Iterable
-from win32com import client as win32
 from xml.etree import ElementTree
 
 from .HierarchyScope import HierarchyScope
+from .OneNoteAPI import OneNoteAPI
 
 
 class OneNoteNode(ABC):
-    def __init__(self, app: win32.CDispatch = None):
-        self._app = app if app is not None else self._create_onenote_com_object()
+    def __init__(self, onenote_api: OneNoteAPI = None):
+        self._onenote_api = onenote_api or OneNoteAPI()
 
     @property
     @abstractmethod
     def node_id(self) -> str:
         pass
 
-    @staticmethod
-    def _create_onenote_com_object() -> win32.CDispatch:
-        return win32.gencache.EnsureDispatch("OneNote.Application.12")
-
-    def _get_hierarchy_xml(self, node_id: str, scope: HierarchyScope) -> ElementTree:
-        return ElementTree.fromstring(self._app.GetHierarchy(node_id, scope.value, ""))
+    def _get_hierarchy_xml(self, node_id: str, hierarchy_scope: HierarchyScope) -> ElementTree:
+        return self._onenote_api.get_hierarchy(node_id, hierarchy_scope)
 
     def _get_children_xml(self) -> ElementTree:
         return self._get_hierarchy_xml(self.node_id, HierarchyScope.Children)
@@ -37,7 +33,7 @@ class OneNoteNode(ABC):
 
     def _produce_child_node(self, element: ElementTree, index: int) -> 'OneNoteNode':
         from onenote.create_onenote_node import create_onenote_node_from_xml_element
-        return create_onenote_node_from_xml_element(element, index, self, self._app)
+        return create_onenote_node_from_xml_element(element, index, self, self._onenote_api)
 
     def _get_children(self) -> Iterable['OneNoteNode']:
         for i, child_element in enumerate(self._get_children_xml()):
