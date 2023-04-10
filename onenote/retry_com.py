@@ -30,7 +30,7 @@ def retry_com(func_being_decorated: decoratee, *decorator_args, **decorator_kwar
     @wraps(func_being_decorated)
     def wrapper_retry_com(*args, **kwargs) -> T:
         errors: list[COMError] = []
-        max_attempts = 5
+        max_attempts = 3
         for attempt in range(1, max_attempts + 1):
             try:
                 return func_being_decorated(*args, **kwargs)
@@ -41,7 +41,8 @@ def retry_com(func_being_decorated: decoratee, *decorator_args, **decorator_kwar
                 errors.insert(0, error)
                 if attempt >= max_attempts:
                     raise RuntimeError(
-                        f"Failed to invoke {func_being_decorated.__name__} after {max_attempts} attempts: {errors}"
+                        f"Failed to invoke {func_being_decorated.__name__} after {max_attempts} attempts: {errors}",
+                        error
                     ) from error
 
                 backoff = _calculate_backoff(attempt)
