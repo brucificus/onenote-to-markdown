@@ -8,9 +8,6 @@ import pypandoc
 from markdown_dom.MarkdownDocument import MarkdownDocument
 from onenote import OneNotePage
 from onenote_export.OneNoteExportTaskContext import OneNoteExportTaskContext
-from onenote_export.OneNotePageDocxExportError import OneNotePageDocxExportError
-from onenote_export.OneNotePageMhtmlExportError import OneNotePageMhtmlExportError
-from onenote_export.OneNotePagePdfExportError import OneNotePagePdfExportError
 from onenote_export.TemporaryOneNotePageDocxExport import TemporaryOneNotePageDocxExport
 from onenote_export.TemporaryOneNotePageMhtmlExport import TemporaryOneNotePageMhtmlExport
 from onenote_export.TemporaryOneNotePagePdfExport import TemporaryOneNotePagePdfExport
@@ -136,23 +133,13 @@ class OneNotePageExportTaskContext(OneNoteExportTaskContext[OneNotePage], Contex
             raise RuntimeError(f"Unsupported temporary_page_pandoc_ast_json_handler_class: {self._temporary_page_pandoc_ast_json_handler_class}")
         self._output_md_document = self._create_output_md_document()
 
-        try:
-            self._temp_pdf_export.__enter__()
-        except Exception as e:
-            raise OneNotePagePdfExportError(self._page, e) from e
+        self._temp_pdf_export.__enter__()
 
-        try:
-            if issubclass(self._temporary_page_pandoc_ast_json_handler_class, TemporaryOneNotePageDocxExport):
-                self._temp_docx_export.__enter__()
-            elif issubclass(self._temporary_page_pandoc_ast_json_handler_class, TemporaryOneNotePageMhtmlExport):
-                self._temp_mhtml_export.__enter__()
-            else:
-                raise RuntimeError(f"Unsupported temporary_page_pandoc_ast_json_handler_class: {self._temporary_page_pandoc_ast_json_handler_class}")
-        except Exception as e:
-            if issubclass(self._temporary_page_pandoc_ast_json_handler_class, TemporaryOneNotePageDocxExport):
-                raise OneNotePageDocxExportError(self._page, e) from e
-            if issubclass(self._temporary_page_pandoc_ast_json_handler_class, TemporaryOneNotePageMhtmlExport):
-                raise OneNotePageMhtmlExportError(self._page, e) from e
+        if issubclass(self._temporary_page_pandoc_ast_json_handler_class, TemporaryOneNotePageDocxExport):
+            self._temp_docx_export.__enter__()
+        elif issubclass(self._temporary_page_pandoc_ast_json_handler_class, TemporaryOneNotePageMhtmlExport):
+            self._temp_mhtml_export.__enter__()
+        else:
             raise RuntimeError(f"Unsupported temporary_page_pandoc_ast_json_handler_class: {self._temporary_page_pandoc_ast_json_handler_class}")
 
         return self
