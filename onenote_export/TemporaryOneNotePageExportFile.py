@@ -17,10 +17,15 @@ class TemporaryOneNotePageExportFile(temporary_file.TemporaryFilePath, ContextMa
         if not isinstance(kind, TemporaryOneNotePageExportKind):
             raise TypeError(f"Kind must be an instance of TemporaryOneNotePageExportKind, not {type(kind)}")
         super().__init__(suffix=f'.{kind.value}', prefix='tmp', dir=dir)
+        self._enters = 0
         self._page = page
         self._kind = kind
 
     def __enter__(self):
+        self._enters += 1
+        if self._enters > 1:
+            return self._tempfile_path
+
         if self._kind == TemporaryOneNotePageExportKind.PDF:
             self._tempfile_path = super().__enter__()
             self._page._export_pdf(self._tempfile_path)
@@ -48,4 +53,8 @@ class TemporaryOneNotePageExportFile(temporary_file.TemporaryFilePath, ContextMa
         return self._tempfile_path
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self._enters -= 1
+        if self._enters > 0:
+            return
+
         super().__exit__(exc_type, exc_val, exc_tb)
