@@ -3,8 +3,8 @@ import pathlib
 import unittest
 from unittest.mock import MagicMock
 
-from onenote_export.page_pdf_patch_images_into_md import page_pdf_patch_images_into_md
-from .seeded_fake_onenote_page_export_task_context import create_seeded_fake_onenote_page_export_task_context
+from onenote_export.page_export_tasks.page_pdf_patch_images_into_md import page_pdf_patch_images_into_md
+from test_onenote_export.test_page_export_tasks.seeded_fake_onenote_page_export_task_context import create_seeded_fake_onenote_page_export_task_context
 
 
 class TestPagePdfPatchImagesIntoMd(unittest.TestCase):
@@ -16,7 +16,6 @@ class TestPagePdfPatchImagesIntoMd(unittest.TestCase):
         for sample_document_name in sample_document_names:
             with self.subTest(sample_document_name=sample_document_name):
                 with create_seeded_fake_onenote_page_export_task_context(
-                    sample_docx_path=sample_data_dir / pathlib.Path(f'{sample_document_name}.docx'),
                     sample_pdf_path=sample_data_dir / pathlib.Path(f'{sample_document_name}.pdf'),
                     sample_md_path=sample_data_dir / pathlib.Path(f'{sample_document_name}.md'),
                 ) as context:
