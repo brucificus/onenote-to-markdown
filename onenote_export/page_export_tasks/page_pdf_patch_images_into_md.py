@@ -26,7 +26,7 @@ def page_pdf_patch_images_into_md(context: OneNotePageExportTaskContext, logger:
 
         for pdf_page in doc.pages:
             for pdf_page_image in pdf_page.images:
-                img_num_suffix = str(pdf_page_image.document_order_image_index).zfill(3)
+                img_num_suffix = str(pdf_page_image.document_order_image_index + 1).zfill(3)
                 png_name = "%s_%s.png" % (context.safe_filename_base, img_num_suffix)
                 page_relative_png_path = context.assets_dir / pathlib.Path(png_name)
                 png_output_path = context.output_dir / page_relative_png_path

@@ -1,13 +1,15 @@
 import functools
 import pathlib
 from functools import cache
-from typing import ContextManager, Callable
+from typing import ContextManager, Callable, Union, Optional, Sequence
 
 import pypandoc
 
 from markdown_dom.MarkdownDocument import MarkdownDocument
 from onenote import OneNotePage
 from onenote_export.OneNoteExportTaskContext import OneNoteExportTaskContext
+from onenote_export.PageExportAssetExtraction import PageExportAssetExtraction
+from onenote_export.Pathlike import Pathlike
 from onenote_export.TemporaryOneNotePageDocxExport import TemporaryOneNotePageDocxExport
 from onenote_export.TemporaryOneNotePageMhtmlExport import TemporaryOneNotePageMhtmlExport
 from onenote_export.TemporaryOneNotePagePdfExport import TemporaryOneNotePagePdfExport
@@ -48,13 +50,13 @@ def default_create_output_md_document(context: 'OneNotePageExportTaskContext') -
     return doc
 
 
-class OneNotePageExportTaskContext(OneNoteExportTaskContext[OneNotePage], ContextManager):
+class OneNotePageExportTaskContext(OneNoteExportTaskContext[OneNotePage], PageExportAssetExtraction, ContextManager):
     def __init__(self,
                  context: OneNoteExportTaskContext[OneNotePage],
                  *,
                  create_temporary_docx_export_handler: Callable[[OneNotePage], TemporaryOneNotePageDocxExport] = default_create_temporary_docx_export_handler,
                  create_temporary_mhtml_export_handler: Callable[[OneNotePage], TemporaryOneNotePageMhtmlExport] = default_create_temporary_mhtml_export_handler,
-                 temporary_page_pandoc_ast_json_handler_class: type[TemporaryPageExportPandocAstJsonContext] = TemporaryOneNotePageMhtmlExport,
+                 temporary_page_pandoc_ast_json_handler_class: type[Union[TemporaryPageExportPandocAstJsonContext, PageExportAssetExtraction]] = TemporaryOneNotePageMhtmlExport,
                  create_temporary_pdf_export_handler: Callable[[OneNotePage], TemporaryOneNotePagePdfExport] = TemporaryOneNotePagePdfExport,
                  create_output_md_document: Callable[['OneNotePageExportTaskContext'], MarkdownDocument] = default_create_output_md_document,
                  ):
@@ -173,6 +175,27 @@ class OneNotePageExportTaskContext(OneNoteExportTaskContext[OneNotePage], Contex
             return self._page_as_docx_pandoc_ast_json
         if issubclass(self._temporary_page_pandoc_ast_json_handler_class, TemporaryOneNotePageMhtmlExport):
             return self._page_as_mhtml_pandoc_ast_json
+        raise RuntimeError(f"Unsupported temporary_page_pandoc_ast_json_handler_class: {self._temporary_page_pandoc_ast_json_handler_class}")
+
+    def extract_assets_to(self,
+                          target_dir: Pathlike,
+                          map_extraction_path: Optional[Callable[[pathlib.Path], Optional[pathlib.Path]]] = None,
+                          ) -> Sequence[pathlib.Path]:
+        """
+        Extracts assets from the page export to the target directory.
+        :param target_dir: The directory to extract assets to.
+        :param map_extraction_path: A function that takes a path to an asset and returns the path to which the asset should be extracted. If None, the asset will not be extracted.
+        :return: The paths to the extracted assets.
+        """
+        if isinstance(target_dir, str):
+            target_dir = pathlib.Path(target_dir)
+        if not isinstance(target_dir, pathlib.Path):
+            raise TypeError(f"target_dir must be an instance of pathlib.Path or str, not {type(target_dir)}")
+
+        if issubclass(self._temporary_page_pandoc_ast_json_handler_class, TemporaryOneNotePageDocxExport):
+            return self._temp_docx_export.extract_assets_to(target_dir, map_extraction_path)
+        if issubclass(self._temporary_page_pandoc_ast_json_handler_class, TemporaryOneNotePageMhtmlExport):
+            return self._temp_mhtml_export.extract_assets_to(target_dir, map_extraction_path)
         raise RuntimeError(f"Unsupported temporary_page_pandoc_ast_json_handler_class: {self._temporary_page_pandoc_ast_json_handler_class}")
 
     @property

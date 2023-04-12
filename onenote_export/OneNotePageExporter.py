@@ -1,3 +1,4 @@
+import functools
 import logging
 
 import pywintypes
@@ -30,38 +31,39 @@ class OneNotePageExporter(OneNoteExportTaskBase):
         prerequisites: Tuple[OneNoteExportTaskBase],
         subtask_factory: OneNoteExportTaskFactory
     ) -> Iterable['OneNoteExportTask']:
-        create_subtask = subtask_factory.create_from_spec
+        create_subtask = functools.partial(subtask_factory.create_from_spec, node=context.node)
 
         task_ensure_output_dir_exists = create_subtask(
-            context.node,
             task_spec=page_ensure_output_dir_exists,
             prerequisites=prerequisites
         )
         yield task_ensure_output_dir_exists
 
         task_ensure_assets_dir_exists = create_subtask(
-            context.node,
             task_spec=page_ensure_assets_dir_exists,
             prerequisites=prerequisites + (task_ensure_output_dir_exists,)
         )
         yield task_ensure_assets_dir_exists
 
         task_page_reparse_embedded_html = create_subtask(
-            context.node,
             task_spec=page_reparse_embedded_html,
             prerequisites=prerequisites
         )
         yield task_page_reparse_embedded_html
 
-        task_pdf_patch_images_into_md = create_subtask(
-            context.node,
-            task_spec=page_pdf_patch_images_into_md,
+        task_page_extract_ordinated_assets_and_relink = create_subtask(
+            task_spec=page_extract_ordinated_assets_and_relink,
             prerequisites=(task_ensure_assets_dir_exists, task_page_reparse_embedded_html,)
+        )
+        yield task_page_extract_ordinated_assets_and_relink
+
+        task_pdf_patch_images_into_md = create_subtask(
+            task_spec=page_pdf_patch_images_into_md,
+            prerequisites=(task_page_extract_ordinated_assets_and_relink,)
         )
         yield task_pdf_patch_images_into_md
 
         task_export_pandoc_ast_to_markdown_file = create_subtask(
-            context.node,
             task_spec=page_export_pandoc_ast_to_markdown_file,
             prerequisites=(task_pdf_patch_images_into_md,)
         )
