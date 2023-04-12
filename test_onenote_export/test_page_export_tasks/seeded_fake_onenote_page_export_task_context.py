@@ -1,5 +1,7 @@
 import pathlib
 import shutil
+
+from typing import Optional
 from unittest.mock import MagicMock
 
 from fitz import fitz
@@ -13,15 +15,15 @@ from pdf_inspection.PdfDocument import PdfDocument
 
 
 def create_seeded_fake_onenote_page_export_task_context(
-    sample_docx_path: Pathlike,
-    sample_pdf_path: Pathlike,
-    sample_md_path: Pathlike
+    sample_docx_path: Optional[Pathlike] = None,
+    sample_pdf_path: Optional[Pathlike] = None,
+    sample_md_path: Optional[Pathlike] = None,
 ) -> OneNotePageExportTaskContext:
-    if not isinstance(sample_docx_path, pathlib.Path):
+    if not isinstance(sample_docx_path, pathlib.Path) and sample_docx_path is not None:
         sample_docx_path = pathlib.Path(str(sample_docx_path))
-    if not isinstance(sample_pdf_path, pathlib.Path):
+    if not isinstance(sample_pdf_path, pathlib.Path) and sample_pdf_path is not None:
         sample_pdf_path = pathlib.Path(str(sample_pdf_path))
-    if not isinstance(sample_md_path, pathlib.Path):
+    if not isinstance(sample_md_path, pathlib.Path) and sample_md_path is not None:
         sample_md_path = pathlib.Path(str(sample_md_path))
 
     mock_page = MagicMock(spec=OneNotePage)
@@ -55,19 +57,22 @@ def create_seeded_fake_onenote_page_export_task_context(
         mock_context.temp_working_dir = temp_working_dir
         temp_working_dir.mkdir()
 
-        test_run_sample_pdf_path = temp_working_dir / sample_pdf_path.name
-        shutil.copy2(sample_pdf_path, test_run_sample_pdf_path)
-        mock_context.page_as_pdf_document = PdfDocument(test_run_sample_pdf_path)
+        if sample_pdf_path is not None:
+            test_run_sample_pdf_path = temp_working_dir / sample_pdf_path.name
+            shutil.copy2(sample_pdf_path, test_run_sample_pdf_path)
+            mock_context.page_as_pdf_document = PdfDocument(test_run_sample_pdf_path)
 
-        # y? is anyone using this?
-        test_run_sample_docx_path = temp_working_dir / sample_docx_path.name
-        shutil.copy2(sample_docx_path, test_run_sample_docx_path)
+        if sample_docx_path is not None:
+            # y? is anyone using this?
+            test_run_sample_docx_path = temp_working_dir / sample_docx_path.name
+            shutil.copy2(sample_docx_path, test_run_sample_docx_path)
 
-        test_run_sample_md_path = pretend_output_dir / sample_md_path.name
-        shutil.copy2(sample_md_path, test_run_sample_md_path)
-        mock_context.output_md_path = test_run_sample_md_path
+        if sample_md_path is not None:
+            test_run_sample_md_path = pretend_output_dir / sample_md_path.name
+            shutil.copy2(sample_md_path, test_run_sample_md_path)
+            mock_context.output_md_path = test_run_sample_md_path
 
-        mock_context.output_md_document = MarkdownDocument.import_md_file(test_run_sample_md_path)
+            mock_context.output_md_document = MarkdownDocument.import_md_file(test_run_sample_md_path)
 
         return mock_context
 

@@ -1,4 +1,4 @@
-from .test_page_pdf_patch_images_into_md import TestPagePdfPatchImagesIntoMd
+from .test_page_export_tasks import *
 from .TestOneNoteExporter import TestOneNoteExporter
 from .TestOneNotePageExporter import TestOneNotePageExporter
 from .TestOneNoteExportTaskContext import TestOneNoteExportTaskContext

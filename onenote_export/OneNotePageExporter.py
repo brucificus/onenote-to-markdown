@@ -3,15 +3,10 @@ import logging
 import pywintypes
 from typing import Iterable, Tuple, Callable
 
-import onenote_export.page_ensure_assets_dir_exists
-import onenote_export.page_ensure_output_dir_exists
-import onenote_export.page_export_pandoc_ast_to_markdown_file
-import onenote_export.page_pdf_patch_images_into_md
-import onenote_export.page_reparse_embedded_html
-
 from .OneNoteExportTaskBase import OneNoteExportTaskBase
 from .OneNoteExportTaskFactory import OneNoteExportTaskFactory
 from .OneNotePageExportTaskContext import OneNotePageExportTaskContext
+from .page_export_tasks import *
 
 
 class OneNotePageExporter(OneNoteExportTaskBase):
@@ -30,22 +25,46 @@ class OneNotePageExporter(OneNoteExportTaskBase):
         self._logger = logger
 
     @staticmethod
-    def _yield_subtasks(context: OneNotePageExportTaskContext, prerequisites: Tuple[OneNoteExportTaskBase], subtask_factory: OneNoteExportTaskFactory) -> Iterable['OneNoteExportTask']:
+    def _yield_subtasks(
+        context: OneNotePageExportTaskContext,
+        prerequisites: Tuple[OneNoteExportTaskBase],
+        subtask_factory: OneNoteExportTaskFactory
+    ) -> Iterable['OneNoteExportTask']:
         create_subtask = subtask_factory.create_from_spec
 
-        task_ensure_output_dir_exists = create_subtask(context.node, task_spec=onenote_export.page_ensure_output_dir_exists.page_ensure_output_dir_exists, prerequisites=prerequisites)
+        task_ensure_output_dir_exists = create_subtask(
+            context.node,
+            task_spec=page_ensure_output_dir_exists,
+            prerequisites=prerequisites
+        )
         yield task_ensure_output_dir_exists
 
-        task_ensure_assets_dir_exists = create_subtask(context.node, task_spec=onenote_export.page_ensure_assets_dir_exists.page_ensure_assets_dir_exists, prerequisites=prerequisites + (task_ensure_output_dir_exists,))
+        task_ensure_assets_dir_exists = create_subtask(
+            context.node,
+            task_spec=page_ensure_assets_dir_exists,
+            prerequisites=prerequisites + (task_ensure_output_dir_exists,)
+        )
         yield task_ensure_assets_dir_exists
 
-        task_page_reparse_embedded_html = create_subtask(context.node, task_spec=onenote_export.page_reparse_embedded_html.page_reparse_embedded_html, prerequisites=prerequisites)
+        task_page_reparse_embedded_html = create_subtask(
+            context.node,
+            task_spec=page_reparse_embedded_html,
+            prerequisites=prerequisites
+        )
         yield task_page_reparse_embedded_html
 
-        task_pdf_patch_images_into_md = create_subtask(context.node, task_spec=onenote_export.page_pdf_patch_images_into_md.page_pdf_patch_images_into_md, prerequisites=(task_ensure_assets_dir_exists, task_page_reparse_embedded_html,))
+        task_pdf_patch_images_into_md = create_subtask(
+            context.node,
+            task_spec=page_pdf_patch_images_into_md,
+            prerequisites=(task_ensure_assets_dir_exists, task_page_reparse_embedded_html,)
+        )
         yield task_pdf_patch_images_into_md
 
-        task_export_pandoc_ast_to_markdown_file = create_subtask(context.node, task_spec=onenote_export.page_export_pandoc_ast_to_markdown_file.page_export_pandoc_ast_to_markdown_file, prerequisites=(task_pdf_patch_images_into_md,))
+        task_export_pandoc_ast_to_markdown_file = create_subtask(
+            context.node,
+            task_spec=page_export_pandoc_ast_to_markdown_file,
+            prerequisites=(task_pdf_patch_images_into_md,)
+        )
         yield task_export_pandoc_ast_to_markdown_file
 
 
