@@ -60,7 +60,7 @@ default_output_extensions_for_onenote_docx_to_obsidian_md = str(PandocExtensionA
         PandocExtension.link_attributes: True,  # TODO: Consider disabling this. Obsidian doesn't support link attributes.
         PandocExtension.lists_without_preceding_blankline: True,  # Not a default value. Obsidian supports lists without preceding blank lines.
         PandocExtension.literate_haskell: False,
-        PandocExtension.mark: False,
+        # PandocExtension.mark: False,  # Not all recent versions of Pandoc support this extension.
         PandocExtension.markdown_attribute: False,
         PandocExtension.markdown_in_html_blocks: False,  # Not a default value. Obsidian doesn't fully support md in html blocks.
         PandocExtension.mmd_header_identifiers: False,
@@ -91,8 +91,8 @@ default_output_extensions_for_onenote_docx_to_obsidian_md = str(PandocExtensionA
         PandocExtension.tex_math_dollars: False,  # Not a default value. Obsidian doesn't support tex math dollars.
         PandocExtension.tex_math_double_backslash: False,
         PandocExtension.tex_math_single_backslash: False,
-        PandocExtension.wikilinks_title_after_pipe: False,
-        PandocExtension.wikilinks_title_before_pipe: False,
+        # PandocExtension.wikilinks_title_after_pipe: False,  # Not all recent versions of Pandoc support this extension.
+        # PandocExtension.wikilinks_title_before_pipe: False,  # Not all recent versions of Pandoc support this extension.
         PandocExtension.yaml_metadata_block: True,
     }
 ))
