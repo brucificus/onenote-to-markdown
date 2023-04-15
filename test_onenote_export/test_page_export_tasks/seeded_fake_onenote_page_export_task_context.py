@@ -7,12 +7,51 @@ from unittest.mock import MagicMock
 from fitz import fitz
 
 from markdown_dom.MarkdownDocument import MarkdownDocument
+from mhtml_dom.MhtmlContainer import MhtmlContainer
 from onenote.OneNotePage import OneNotePage
+from onenote_export.OneNoteExportTaskContext import OneNoteExportTaskContext
 from onenote_export.Pathlike import Pathlike
 from onenote_export.OneNotePageExportTaskContext import OneNotePageExportTaskContext
+from onenote_export.TemporaryOneNotePageDocxExport import TemporaryOneNotePageDocxExport
+from onenote_export.TemporaryOneNotePageMhtmlExport import TemporaryOneNotePageMhtmlExport
+from onenote_export.TemporaryOneNotePagePdfExport import TemporaryOneNotePagePdfExport
 from onenote_export.temporary_file import TemporaryFilePath
 from pdf_inspection.PdfDocument import PdfDocument
 
+
+def create_mock_page(
+    name: str,
+    sample_mhtml_path: Optional[Pathlike] = None,
+    sample_docx_path: Optional[Pathlike] = None,
+    sample_pdf_path: Optional[Pathlike] = None,
+) -> OneNotePage:
+    mock_page = MagicMock(spec=OneNotePage)
+    mock_page.children = ()
+    mock_page.name = name
+    mock_page.parent = None
+    mock_page.node_id = 'mock_node_id'
+    mock_page.index = 0
+
+    def replacement_export_mhtml(path: pathlib.Path):
+        if sample_mhtml_path is not None:
+            shutil.copyfile(sample_mhtml_path, path)
+        else:
+            raise NotImplementedError()
+    mock_page._export_mhtml = replacement_export_mhtml
+
+    def replacement_export_docx(path: pathlib.Path):
+        if sample_docx_path is not None:
+            shutil.copyfile(sample_docx_path, path)
+        else:
+            raise NotImplementedError()
+    mock_page._export_docx = replacement_export_docx
+
+    def replacement_export_pdf(path: pathlib.Path):
+        if sample_pdf_path is not None:
+            shutil.copyfile(sample_pdf_path, path)
+    mock_page._export_pdf = replacement_export_pdf
+
+    return mock_page
 
 def create_seeded_fake_onenote_page_export_task_context(
     sample_docx_path: Optional[Pathlike] = None,
@@ -26,10 +65,7 @@ def create_seeded_fake_onenote_page_export_task_context(
     if not isinstance(sample_md_path, pathlib.Path) and sample_md_path is not None:
         sample_md_path = pathlib.Path(str(sample_md_path))
 
-    mock_page = MagicMock(spec=OneNotePage)
-    mock_page.children = ()
-    mock_page.name = sample_md_path.with_suffix('').name
-    mock_page.parent = None
+    mock_page = create_mock_page(sample_md_path.with_suffix('').name)
 
     mock_context = MagicMock()
     mock_context.assets_dir = 'assets'
@@ -94,3 +130,51 @@ def create_seeded_fake_onenote_page_export_task_context(
     mock_context.__exit__ = mock_context__exit__
 
     return mock_context
+
+class SeededMockOneNotePageExportTaskContext(OneNotePageExportTaskContext):
+    def __init__(self,
+                 sample_mhtml_path: Optional[Pathlike] = None,
+                 sample_pdf_path: Optional[Pathlike] = None,
+                 ):
+        mock_page = create_mock_page(
+            sample_mhtml_path.with_suffix('').name,
+            sample_mhtml_path=sample_mhtml_path,
+            sample_pdf_path=sample_pdf_path,
+        )
+
+        inner_context = OneNoteExportTaskContext(
+            node=mock_page,
+            output_dir=MagicMock(spec=pathlib.Path),
+            assets_dir=MagicMock(spec=pathlib.Path),
+            safe_filename_base=pathlib.Path(mock_page.name),
+        )
+
+        self._temp_output_dir_handler = TemporaryFilePath()
+
+        super().__init__(inner_context, create_output_md_document=self._create_output_md_document)
+
+    def _create_output_md_document(self, _: OneNotePageExportTaskContext) -> MarkdownDocument:
+        md_path = self._output_dir / self.safe_filename_base.with_suffix('.md')
+        self._output_md_path = md_path
+
+        def get_initial_ast():
+            export_in_vivo = self._temp_mhtml_export
+            with export_in_vivo:
+                return self.page_as_pandoc_ast_json
+
+        doc = MarkdownDocument.open_document_ast_json_str(
+            initial_document_ast_json=get_initial_ast,
+            output_md_path=md_path,
+        )
+        return doc
+
+    def __enter__(self) -> OneNotePageExportTaskContext:
+        self._output_dir = self._temp_output_dir_handler.__enter__()
+        super().__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            super().__exit__(exc_type, exc_val, exc_tb)
+        finally:
+            self._temp_output_dir_handler.__exit__(exc_type, exc_val, exc_tb)

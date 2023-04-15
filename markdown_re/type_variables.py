@@ -1,14 +1,15 @@
-from typing import TypeVar, Callable, Optional, Sequence, Iterable, Union
+import re
+
+from collections.abc import Sequence
+from typing import TypeVar, Union, Iterable
 
 import panflute
 
+
 T = TypeVar('T')
 
-PanfluteElementFilter = Callable[[panflute.Element, panflute.Doc, ...], Optional[panflute.Element]]
-PanfluteDocumentFilter = Callable[[panflute.Doc], None]
-PanfluteElementPredicate = Callable[[panflute.Element, ...], bool]
-PanfluteImageElementUrlProjection = Callable[[panflute.Image, panflute.Doc], str]
-PanfluteElementAccumulatorFunc = Callable[[panflute.Element, panflute.Doc, T], T]
+
+PatternLike = Union[str, re.Pattern[str]]
 
 
 PanfluteElementLikeSingular = Union[panflute.Element, str]

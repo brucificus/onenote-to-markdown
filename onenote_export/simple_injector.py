@@ -35,66 +35,43 @@ class InjectableParameterSignatureComparison:
     signature_param: inspect.Parameter
 
     def __post_init__(self):
+        if not isinstance(self.injectable_param, InjectableParameter):
+            raise ValueError('injectable_param must be an instance of InjectableParameter')
+
+        if not isinstance(self.signature_param, inspect.Parameter):
+            raise ValueError('signature_param must be an instance of inspect.Parameter')
+
         self.injectable_param = self.injectable_param
         self.signature_param = self.signature_param
 
     @property
-    @cache
-    def is_match_by_annotation(self) -> bool:
+    def is_match_by_annotation(self) -> Optional[bool]:
         sig_param_annotation = str(self.signature_param.annotation)
         sig_param_annotation_is_generic = '[' in sig_param_annotation
         if sig_param_annotation_is_generic:
-            return False
-
-        sig_param_annotation_is_collection = 'tuple' in sig_param_annotation \
-                                             or 'Tuple' in sig_param_annotation \
-                                             or 'list' in sig_param_annotation \
-                                             or 'List' in sig_param_annotation \
-                                             or 'set' in sig_param_annotation \
-                                             or 'Set' in sig_param_annotation \
-                                             or 'dict' in sig_param_annotation \
-                                             or 'Dict' in sig_param_annotation \
-                                             or 'iterable' in sig_param_annotation \
-                                             or 'Iterable' in sig_param_annotation \
-                                             or 'iterator' in sig_param_annotation \
-                                             or 'Iterator' in sig_param_annotation \
-                                             or 'sequence' in sig_param_annotation \
-                                             or 'Sequence' in sig_param_annotation \
-                                             or 'generator' in sig_param_annotation \
-                                             or 'Generator' in sig_param_annotation \
-                                             or 'collection' in sig_param_annotation \
-                                             or 'Collection' in sig_param_annotation \
-                                             or 'container' in sig_param_annotation \
-                                             or 'Container' in sig_param_annotation
-        if sig_param_annotation_is_collection:
-            return False
+            return None
 
         return any(t for t in self.injectable_param.possible_types if issubclass(t, self.signature_param.annotation))
 
     @property
-    @cache
     def is_match_by_name(self) -> bool:
         return any(n for n in self.injectable_param.possible_names if n == self.signature_param.name)
 
     @property
-    @cache
     def is_match_contraindicated_by_annotation(self) -> bool:
-        return self.signature_param.annotation != inspect.Parameter.empty and not self.is_match_by_annotation
+        return self.signature_param.annotation != inspect.Parameter.empty and self.is_match_by_annotation != False
 
     @property
-    @cache
     def is_match_contraindicated_by_name(self) -> bool:
         return self.signature_param.name is not None and not self.is_match_by_name
 
     @property
-    @cache
     def is_strong_match(self) -> bool:
         return self.is_match_by_annotation and not self.is_match_contraindicated_by_name or \
                self.is_match_by_name and not self.is_match_contraindicated_by_annotation or \
                self.is_weak_match
 
     @property
-    @cache
     def is_weak_match(self) -> bool:
         return not self.is_match_contraindicated_by_name and not self.is_match_contraindicated_by_annotation
 
@@ -158,8 +135,6 @@ def prepare_action_params(action: callable, injectables: Tuple[InjectableParamet
                 result_kwargs[signature_param.name] = injectable_param.value_factory
                 remaining_injectables = tuple(i for i in remaining_injectables if i != injectable_param)
                 break
-
-
 
     # Then look for weak matches for positional parameters
     for signature_param_index in range(len(positional_signature_params)):

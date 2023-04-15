@@ -12,6 +12,7 @@ from path_scrubbing import PathComponentScrubber
 
 OUTPUT_DIR = os.path.join(os.path.expanduser('~'), "Desktop", "OneNoteExport")
 ASSETS_DIR = "assets"
+PAGES_REMOVE_ONENOTE_FOOTER = True
 USE_LEGACY_DOCX_EXPORT = False
 LOGFILE = 'onenote_to_markdown.log' # Set to None to disable logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', encoding='utf-8')
@@ -59,6 +60,7 @@ if __name__ == "__main__":
             path_component_scrubber=path_scrubber,
             should_export=should_handle,
             use_legacy_docx_export=USE_LEGACY_DOCX_EXPORT,
+            pages_remove_onenote_footer=PAGES_REMOVE_ONENOTE_FOOTER,
         )
         exporter.execute_export(onenote)
 

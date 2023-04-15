@@ -3,16 +3,19 @@ import pathlib
 import shutil
 
 import panflute
+
 from typing import Iterable, Tuple, Union, Callable, Optional
 
+from markdown_dom.ChangeTrackingPanfluteDocumentContextManager import ChangeTrackingPanfluteDocumentContextManager
+from markdown_dom.PandocMarkdownDocumentExportSettings import PandocMarkdownDocumentExportSettings
+from markdown_dom.PandocMarkdownDocumentImportSettings import PandocMarkdownDocumentImportSettings
 from markdown_dom.PanfluteElementAccumulator import PanfluteElementAccumulator
+from markdown_dom.type_variables import T, PanfluteElementFilter, PanfluteDocumentFilter, PanfluteElementPredicate, \
+    PanfluteImageElementUrlProjection
+from markdown_dom.AbstractDocumentElementContentText import AbstractDocumentElementContentText
+from markdown_dom.CompoundDocumentElementContentTextMap import CompoundDocumentElementContentTextMap
 from onenote_export import temporary_file
 from onenote_export.Pathlike import Pathlike
-from .PandocMarkdownDocumentExportSettings import PandocMarkdownDocumentExportSettings
-from .ChangeTrackingPanfluteDocumentContextManager import ChangeTrackingPanfluteDocumentContextManager
-from .PandocMarkdownDocumentImportSettings import PandocMarkdownDocumentImportSettings
-from .type_variables import T, PanfluteElementFilter, PanfluteDocumentFilter, PanfluteElementPredicate, \
-    PanfluteImageElementUrlProjection
 
 
 class MarkdownDocument:
@@ -155,7 +158,7 @@ class MarkdownDocument:
 
     def update_via_panflute_filters(self,
                                     prepare_filter: Optional[PanfluteDocumentFilter] = None,
-                                    element_filters: Optional[Iterable[PanfluteElementFilter]] = None,
+                                    element_filters: Iterable[PanfluteElementFilter] = (),
                                     finalize_filter: Optional[PanfluteDocumentFilter] = None,
                                     stop_if: Optional[PanfluteElementPredicate] = None,
                                     ) -> None:
@@ -226,6 +229,26 @@ class MarkdownDocument:
 
         accumulator = PanfluteElementAccumulator(accumulator_func, seed=0, stop_if=None)
         return self._run_element_accumulator(accumulator)
+
+    def use_text_content(self, action: Callable[[Iterable[AbstractDocumentElementContentText]], T], readonly: bool = True) -> T:
+        """
+        Executes the given action against the document's text content.
+        :param action: Action to execute. It is passed a generator that yields a map of the document's text content.
+        :param readonly: Whether the document should be treated as read-only while action is running.
+        :return: The result of the action.
+        """
+
+        if not isinstance(action, Callable):
+            raise TypeError(f"Expected callable, got {action!r}")
+
+        def continuous_text_map_generator(doc: panflute.Doc) -> Iterable[AbstractDocumentElementContentText]:
+            while True:
+                yield CompoundDocumentElementContentTextMap.from_element_walk(doc)
+
+        def document_filter(doc: panflute.Doc) -> T:
+            return action(continuous_text_map_generator(doc))
+
+        return self._use_panflute_document(document_filter, readonly=readonly)
 
     def _save(self,
               document_ast_json: str,

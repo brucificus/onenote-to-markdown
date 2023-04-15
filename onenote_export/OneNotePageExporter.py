@@ -7,7 +7,9 @@ from typing import Iterable, Tuple, Callable
 from .OneNoteExportTaskBase import OneNoteExportTaskBase
 from .OneNoteExportTaskFactory import OneNoteExportTaskFactory
 from .OneNotePageExportTaskContext import OneNotePageExportTaskContext
+from .OneNotePageExporterSettings import OneNotePageExporterSettings
 from .page_export_tasks import *
+from .page_export_tasks.page_remove_onenote_footer import page_remove_onenote_footer
 
 
 class OneNotePageExporter(OneNoteExportTaskBase):
@@ -15,6 +17,7 @@ class OneNotePageExporter(OneNoteExportTaskBase):
                  context: OneNotePageExportTaskContext,
                  prerequisites: Iterable[OneNoteExportTaskBase],
                  subtask_factory: OneNoteExportTaskFactory,
+                 settings: OneNotePageExporterSettings,
                  *,
                  logger: logging.Logger = logging.getLogger(__name__ + '.' + __qualname__),
                  ):
@@ -22,11 +25,12 @@ class OneNotePageExporter(OneNoteExportTaskBase):
         if not isinstance(context, OneNotePageExportTaskContext):
             raise TypeError(f"Context must be an instance of OneNotePageExportMiddlewareContext, not {type(context)}")
         self._context = context
-        self._subtasks = tuple(OneNotePageExporter._yield_subtasks(context, tuple(), subtask_factory))
+        self._settings = settings
         self._logger = logger
+        self._subtasks = tuple(self._yield_subtasks(context, tuple(), subtask_factory))
 
-    @staticmethod
     def _yield_subtasks(
+        self,
         context: OneNotePageExportTaskContext,
         prerequisites: Tuple[OneNoteExportTaskBase],
         subtask_factory: OneNoteExportTaskFactory
@@ -63,9 +67,19 @@ class OneNotePageExporter(OneNoteExportTaskBase):
         )
         yield task_pdf_patch_images_into_md
 
+        final_save_task_prereqs = (task_pdf_patch_images_into_md,)
+
+        if self._settings.pages_remove_onenote_footer:
+            task_page_remove_onenote_footer = create_subtask(
+                task_spec=page_remove_onenote_footer,
+                prerequisites=(task_page_reparse_embedded_html,)
+            )
+            final_save_task_prereqs += (task_page_remove_onenote_footer,)
+            yield task_page_remove_onenote_footer
+
         task_export_pandoc_ast_to_markdown_file = create_subtask(
             task_spec=page_export_pandoc_ast_to_markdown_file,
-            prerequisites=(task_pdf_patch_images_into_md,)
+            prerequisites=final_save_task_prereqs
         )
         yield task_export_pandoc_ast_to_markdown_file
 
