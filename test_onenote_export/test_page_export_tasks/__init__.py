@@ -1,1 +1,2 @@
 from .test_page_pdf_patch_images_into_md import TestPagePdfPatchImagesIntoMd
+from .test_page_remove_onenote_footer import TestPageRemoveOneNoteFooter

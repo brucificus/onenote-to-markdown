@@ -9,6 +9,7 @@ from onenote_export.OneNoteExportTaskContext import OneNoteExportTaskContext
 from onenote_export.OneNoteExportTaskFactory import OneNoteExportTaskFactory
 from onenote_export.OneNotePageExportTaskContext import OneNotePageExportTaskContext
 from onenote_export.OneNotePageExporter import OneNotePageExporter
+from onenote_export.OneNotePageExporterSettings import OneNotePageExporterSettings
 from onenote_export.TemporaryOneNotePageDocxExport import TemporaryOneNotePageDocxExport
 from onenote_export.TemporaryOneNotePageMhtmlExport import TemporaryOneNotePageMhtmlExport
 from onenote_export.TemporaryOneNotePagePdfExport import TemporaryOneNotePagePdfExport
@@ -18,7 +19,7 @@ from path_scrubbing import PathComponentScrubber
 class TestOneNotePageExporter(unittest.TestCase):
     def test_can_instantiate(self):
         # Arrange
-        subject_ctor_args = (self._mock_context(), (), MagicMock(spec=OneNoteExportTaskFactory))
+        subject_ctor_args = (self._mock_context(), (), MagicMock(spec=OneNoteExportTaskFactory), OneNotePageExporterSettings())
         subject_ctor_kwargs = {}
 
         # Act
@@ -94,7 +95,8 @@ class TestOneNotePageExporter(unittest.TestCase):
         subject_ctor_kwargs = {
             'context': self._mock_context(),
             'prerequisites': (),
-            'subtask_factory': MagicMock(spec=OneNoteExportTaskFactory)
+            'subtask_factory': MagicMock(spec=OneNoteExportTaskFactory),
+            'settings': OneNotePageExporterSettings(),
         }
 
         return OneNotePageExporter(*subject_ctor_args, **subject_ctor_kwargs)

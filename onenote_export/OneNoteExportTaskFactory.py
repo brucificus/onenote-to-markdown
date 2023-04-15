@@ -9,12 +9,14 @@ from .OneNoteExportTaskContextFactory import OneNoteExportTaskContextFactory
 from .OneNoteExportTaskBase import OneNoteExportTaskBase
 from .OneNoteExportTaskLiteral import OneNoteExportTaskLiteral
 from .OneNotePageExportTaskContext import OneNotePageExportTaskContext
+from .OneNotePageExporterSettings import OneNotePageExporterSettings
 from .simple_injector import prepare_action_params, InjectableParameter
 
 
 class OneNoteExportTaskFactory:
     def __init__(self,
                  context_factory: OneNoteExportTaskContextFactory,
+                 page_exporter_settings: OneNotePageExporterSettings,
                  should_export: Callable[[OneNoteNode], bool] = lambda node: True,
                  ):
         if not isinstance(context_factory, OneNoteExportTaskContextFactory):
@@ -22,6 +24,7 @@ class OneNoteExportTaskFactory:
         self._contexts: Dict[OneNoteNode, OneNoteExportTaskContext[OneNoteNode]] = {}
         self._context_factory = context_factory
         self._should_export = should_export
+        self._page_exporter_settings = page_exporter_settings
 
     def _get_or_create_context(self, node: OneNoteNode) -> OneNoteExportTaskContext[OneNoteNode]:
         if node not in self._contexts:
@@ -57,6 +60,7 @@ class OneNoteExportTaskFactory:
                 InjectableParameter(('context', 'ctx', 'c'), (OneNoteExportTaskContext, OneNotePageExportTaskContext), get_context),
                 InjectableParameter(('logger', 'log', 'l'), (Logger,), get_logger),
                 InjectableParameter(('subtask_factory', 'task_factory', 'tf'), (OneNoteExportTaskFactory,), lambda: self),
+                InjectableParameter(('settings',), (OneNotePageExporterSettings,), lambda: self._page_exporter_settings),
             ),
             should_try_injection=lambda param: param.name != 'prerequisites'
         )
