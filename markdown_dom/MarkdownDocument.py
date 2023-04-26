@@ -94,17 +94,16 @@ class MarkdownDocument:
             self._document_context_manager = self._document_context_manager_factory()
         self._mode_is_readonly = True
 
-        try:
-            with self._document_context_manager:
-                if callable(new_ast_json):
-                    self._document_context_manager.document_ast_json = new_ast_json()
-                else:
-                    self._document_context_manager.document_ast_json = new_ast_json
-        finally:
-            if self._document_context_manager.is_dirty:
-                self._is_dirty = True
-                self._document_context_manager.commit_changes()
-            self._mode_is_readonly = None
+        with self._document_context_manager:
+            if callable(new_ast_json):
+                self._document_context_manager.document_ast_json = new_ast_json()
+            else:
+                self._document_context_manager.document_ast_json = new_ast_json
+
+        if self._document_context_manager.is_dirty:
+            self._is_dirty = True
+            self._document_context_manager.commit_changes()
+        self._mode_is_readonly = None
 
     def _use_panflute_document(self, action: Callable[[panflute.Doc], T], readonly: bool = True) -> T:
         if readonly:
