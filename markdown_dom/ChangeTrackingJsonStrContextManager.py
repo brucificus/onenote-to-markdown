@@ -1,21 +1,31 @@
 import abc
+import logging
+
 from typing import ContextManager, Union, Callable
 
 
 class ChangeTrackingJsonStrContextManager(ContextManager, abc.ABC):
-    def __init__(self, initial_value: Union[str, Callable[[], str]] = None):
+    def __init__(self, initial_value: Union[str, Callable[[], str]] = None, *, logger: logging.Logger = logging.getLogger(f"{__name__}.{__qualname__}")):
         self._enters = 0
         self._initial_value_factory = initial_value if callable(initial_value) else lambda: initial_value
         self._initial_value: str = None
         self._current_value: str = None
         self._ever_entered = False
+        self._logger = logger
 
     def __enter__(self):
         if self._enters == 0 and self.is_dirty:
             raise ValueError("Cannot enter context when dirty. Call commit_changes or discard_changes first.")
         self._enters += 1
         if self._enters == 1 and not self._ever_entered:
-            self._initial_value = self._initial_value_factory()
+            try:
+                self._initial_value = self._initial_value_factory()
+            except RuntimeError as e:
+                if 'Pandoc died' in str(e):
+                    self._logger.warning("Error while setting initial value for change-tracking.", exc_info=True)
+                    self._initial_value = None
+                else:
+                    raise
             self._current_value = self._initial_value
             self._ever_entered = True
 

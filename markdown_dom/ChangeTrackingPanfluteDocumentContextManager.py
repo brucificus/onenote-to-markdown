@@ -24,6 +24,9 @@ class ChangeTrackingPanfluteDocumentContextManager(ContextManager[panflute.Doc])
 
     @staticmethod
     def _load_document_from_ast_json(document_ast_json: str) -> panflute.Doc:
+        if not document_ast_json:
+            return panflute.Doc()
+
         return json.loads(
             document_ast_json,
             object_hook=panflute.elements.from_json
