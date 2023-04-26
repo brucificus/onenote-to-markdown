@@ -19,7 +19,7 @@ from path_scrubbing import PathComponentScrubber
 class TestOneNotePageExporter(unittest.TestCase):
     def test_can_instantiate(self):
         # Arrange
-        subject_ctor_args = (self._mock_context(), (), MagicMock(spec=OneNoteExportTaskFactory), OneNotePageExporterSettings())
+        subject_ctor_args = (self._mock_context(), (), MagicMock(spec=OneNoteExportTaskFactory), self._create_onenote_page_exporter_settings())
         subject_ctor_kwargs = {}
 
         # Act
@@ -96,10 +96,14 @@ class TestOneNotePageExporter(unittest.TestCase):
             'context': self._mock_context(),
             'prerequisites': (),
             'subtask_factory': MagicMock(spec=OneNoteExportTaskFactory),
-            'settings': OneNotePageExporterSettings(),
+            'settings': self._create_onenote_page_exporter_settings(),
         }
 
         return OneNotePageExporter(*subject_ctor_args, **subject_ctor_kwargs)
+
+    @staticmethod
+    def _create_onenote_page_exporter_settings():
+        return OneNotePageExporterSettings.create_default()
 
 
 if __name__ == '__main__':

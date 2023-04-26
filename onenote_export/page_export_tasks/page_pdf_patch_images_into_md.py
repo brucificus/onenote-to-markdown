@@ -53,7 +53,7 @@ def page_pdf_patch_images_into_md(context: OneNotePageExportTaskContext, logger:
         return image_number
 
     def _count_broken_images(doc: MarkdownDocument) -> int:
-        return doc.count_elements(lambda element, _: get_jpg_image_ordinal(element) is not None)
+        return doc.count_elements(lambda element: get_jpg_image_ordinal(element) is not None)
 
     def _fix_image_names(image_names_to_fix: list[pathlib.Path]):
         doc = context.output_md_document

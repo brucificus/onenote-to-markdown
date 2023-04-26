@@ -10,6 +10,7 @@ from .OneNotePageExportTaskContext import OneNotePageExportTaskContext
 from .OneNotePageExporterSettings import OneNotePageExporterSettings
 from .page_export_tasks import *
 from .page_export_tasks.page_remove_onenote_footer import page_remove_onenote_footer
+from .page_export_tasks.page_remove_redundant_vestigial_stylings import page_remove_redundant_vestigial_stylings
 
 
 class OneNotePageExporter(OneNoteExportTaskBase):
@@ -76,6 +77,14 @@ class OneNotePageExporter(OneNoteExportTaskBase):
             )
             final_save_task_prereqs += (task_page_remove_onenote_footer,)
             yield task_page_remove_onenote_footer
+
+        if self._settings.pages_content_class_settings or self._settings.pages_content_class_settings:
+            task_page_remove_redundant_vestigial_stylings = create_subtask(
+                task_spec=page_remove_redundant_vestigial_stylings,
+                prerequisites=(task_page_reparse_embedded_html,)
+            )
+            final_save_task_prereqs += (task_page_remove_redundant_vestigial_stylings,)
+            yield task_page_remove_redundant_vestigial_stylings
 
         task_export_pandoc_ast_to_markdown_file = create_subtask(
             task_spec=page_export_pandoc_ast_to_markdown_file,

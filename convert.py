@@ -3,17 +3,20 @@ import logging
 import os
 import re
 import traceback
+
+import panflute
 import pywintypes
 
 from onenote import OneNoteApplication, OneNoteNode, OneNoteElementBasedNode
 from onenote_export.OneNoteExporter import create_default_onenote_exporter
+from onenote_export.OneNotePageExporterSettings import OneNotePageContentExportStyleSettings, \
+    OneNotePageContentExportElementStyleSettings, OneNotePageContentExportClassSettings, \
+    OneNotePageContentExportElementClassSettings, OneNotePageExporterSettings
 from path_scrubbing import PathComponentScrubber
 
 
 OUTPUT_DIR = os.path.join(os.path.expanduser('~'), "Desktop", "OneNoteExport")
 ASSETS_DIR = "assets"
-PAGES_REMOVE_ONENOTE_FOOTER = True
-USE_LEGACY_DOCX_EXPORT = False
 LOGFILE = 'onenote_to_markdown.log' # Set to None to disable logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S', encoding='utf-8')
 if LOGFILE:
@@ -23,6 +26,8 @@ if LOGFILE:
 # For debugging purposes, set either or both of these variables to limit which pages are exported:
 EXPORT_EXCLUSION_FILTER = r''
 EXPORT_INCLUSION_FILTER = r''
+USE_LEGACY_DOCX_EXPORT = False
+PAGE_EXPORTER_SETTINGS = OneNotePageExporterSettings.create_default()
 
 
 def should_handle(node: OneNoteNode) -> bool:
@@ -60,7 +65,7 @@ if __name__ == "__main__":
             path_component_scrubber=path_scrubber,
             should_export=should_handle,
             use_legacy_docx_export=USE_LEGACY_DOCX_EXPORT,
-            pages_remove_onenote_footer=PAGES_REMOVE_ONENOTE_FOOTER,
+            page_exporter_settings=PAGE_EXPORTER_SETTINGS,
         )
         exporter.execute_export(onenote)
 

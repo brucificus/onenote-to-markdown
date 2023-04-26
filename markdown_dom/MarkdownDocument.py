@@ -1,17 +1,18 @@
 import functools
+import hashlib
 import pathlib
 import shutil
 
 import panflute
 
-from typing import Iterable, Tuple, Union, Callable, Optional
+from typing import Iterable, Tuple, Union, Callable, Optional, List
 
 from markdown_dom.ChangeTrackingPanfluteDocumentContextManager import ChangeTrackingPanfluteDocumentContextManager
 from markdown_dom.PandocMarkdownDocumentExportSettings import PandocMarkdownDocumentExportSettings
 from markdown_dom.PandocMarkdownDocumentImportSettings import PandocMarkdownDocumentImportSettings
 from markdown_dom.PanfluteElementAccumulator import PanfluteElementAccumulator
 from markdown_dom.type_variables import T, PanfluteElementFilter, PanfluteDocumentFilter, PanfluteElementPredicate, \
-    PanfluteImageElementUrlProjection
+    PanfluteImageElementUrlProjection, normalize_elementlike, PanfluteElementLike
 from markdown_dom.AbstractDocumentElementContentText import AbstractDocumentElementContentText
 from markdown_dom.CompoundDocumentElementContentTextMap import CompoundDocumentElementContentTextMap
 from onenote_export import temporary_file
@@ -69,6 +70,10 @@ class MarkdownDocument:
     @property
     def is_in_use(self) -> bool:
         return self._document_context_manager is not None and self._mode_is_readonly is not None
+
+    @property
+    def checksum(self) -> str:
+        return self._use_pandoc_ast_json(lambda ast_json: hashlib.sha256(ast_json.encode('utf-8')).hexdigest())
 
     def _use_pandoc_ast_json(self, action: Callable[[str], T]) -> T:
         if self.is_in_use:
@@ -156,6 +161,35 @@ class MarkdownDocument:
         """
         return self.update_via_panflute_filters(element_filters=[element_filter], *args, **kwargs)
 
+    @staticmethod
+    def _wrap_element_filter(element_filter: PanfluteElementFilter) -> Callable[[panflute.Element, panflute.Doc], Optional[Union[panflute.Element, List[panflute.Element]]]]:
+        def adjust_filter_result(element: panflute.Element, filter_result: PanfluteElementLike) -> Optional[Union[panflute.Element, List[panflute.Element]]]:
+            if filter_result is None:
+                return None
+            if filter_result is element:
+                return None
+            if isinstance(filter_result, panflute.Element):
+                return filter_result
+
+            filter_result = normalize_elementlike(filter_result, sequence_type=list)
+
+            if not isinstance(filter_result, list):
+                raise Exception(f"Filter or normalize_elementlike returned a non-list value: {filter_result}")
+
+            if len(filter_result) == 1 and filter_result[0] is element:
+                return None
+            if len(filter_result) == 1:
+                return filter_result
+            return filter_result
+
+        @functools.wraps(element_filter)
+        def wrapped_filter(element: panflute.Element, doc: panflute.Doc) -> Callable[[panflute.Element, panflute.Doc], Optional[Union[panflute.Element, List[panflute.Element]]]]:
+            filter_result = element_filter(element, doc)
+            return adjust_filter_result(element, filter_result)
+
+        return wrapped_filter
+
+
     def update_via_panflute_filters(self,
                                     prepare_filter: Optional[PanfluteDocumentFilter] = None,
                                     element_filters: Iterable[PanfluteElementFilter] = (),
@@ -173,6 +207,8 @@ class MarkdownDocument:
         :param stop_if: Function executed on each element of the document. If it returns True, the filters are stopped.
         :return: None.
         """
+
+        element_filters = tuple(map(self._wrap_element_filter, element_filters))
 
         def document_projection(doc: panflute.Doc) -> panflute.Doc:
             new_doc = panflute.run_filters(
@@ -221,14 +257,31 @@ class MarkdownDocument:
         if predicate is None:
             predicate = lambda element, doc: True
 
-        def accumulator_func(element: panflute.Element, doc: panflute.Doc, count: int) -> int:
-            if predicate(element, doc):
+        def accumulator_func(element: panflute.Element, _: panflute.Doc, count: int) -> int:
+            if predicate(element):
                 return count + 1
 
             return count
 
         accumulator = PanfluteElementAccumulator(accumulator_func, seed=0, stop_if=None)
         return self._run_element_accumulator(accumulator)
+
+    def any_elements(self, predicate: PanfluteElementPredicate = None) -> bool:
+        if predicate is None:
+            predicate = lambda element, doc: True
+
+        stop_now: bool = False
+        def accumulator_func(element: panflute.Element, _: panflute.Doc, count: int) -> int:
+            if predicate(element):
+                nonlocal stop_now
+                stop_now = True
+                return count + 1
+
+            return count
+
+        accumulator = PanfluteElementAccumulator(accumulator_func, seed=0, stop_if=lambda _: stop_now)
+        result = self._run_element_accumulator(accumulator)
+        return result > 0
 
     def use_text_content(self, action: Callable[[Iterable[AbstractDocumentElementContentText]], T], readonly: bool = True) -> T:
         """

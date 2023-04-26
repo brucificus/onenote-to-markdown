@@ -18,6 +18,7 @@ class PanfluteElementAccumulator(Generic[T], ContextManager[Tuple[PanfluteElemen
         if self._is_complete:
             raise ValueError("Cannot accumulate more elements after walk is complete")
         self._result = self._accumulator(element, doc, self._result)
+        return element
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._is_complete = True

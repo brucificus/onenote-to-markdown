@@ -3,11 +3,12 @@ from typing import Optional
 
 import panflute
 
+from markdown_re import PanfluteElementLike
 from onenote_export.OneNotePageExportTaskContext import OneNotePageExportTaskContext
 
 
 def page_reparse_embedded_html(context: OneNotePageExportTaskContext, logger: logging.Logger):
-    def update_raw_block(element: panflute.Element, _) -> Optional[panflute.Element]:
+    def update_raw_block(element: panflute.Element, _) -> Optional[PanfluteElementLike]:
         if isinstance(element, panflute.RawBlock):
             if element.format == "html":
                 new_element = panflute.convert_text(

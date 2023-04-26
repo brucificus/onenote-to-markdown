@@ -14,7 +14,8 @@ from onenote import \
 from .OneNoteExportTaskContextFactory import OneNoteExportTaskContextFactory
 from .OneNoteExportTaskBase import OneNoteExportTaskBase
 from .OneNoteExportTaskFactory import OneNoteExportTaskFactory
-from .OneNotePageExporterSettings import OneNotePageExporterSettings
+from .OneNotePageExporterSettings import OneNotePageExporterSettings, OneNotePageContentExportStyleSettings, \
+    OneNotePageContentExportClassSettings
 from .Pathlike import Pathlike
 
 
@@ -95,7 +96,7 @@ def create_default_onenote_exporter(
     path_component_scrubber: Callable[[str], pathlib.Path],
     should_export: Callable[[OneNoteNode], bool] = lambda node: True,
     use_legacy_docx_export: bool = False,
-    pages_remove_onenote_footer: bool = True,
+    page_exporter_settings: Optional[OneNotePageExporterSettings] = None,
 ) -> 'OneNoteExporter':
     context_factory = OneNoteExportTaskContextFactory(
         root_output_dir=root_output_dir,
@@ -104,9 +105,7 @@ def create_default_onenote_exporter(
         use_legacy_docx_export=use_legacy_docx_export,
     )
 
-    page_exporter_settings = OneNotePageExporterSettings(
-        pages_remove_onenote_footer=pages_remove_onenote_footer,
-    )
+    page_exporter_settings = page_exporter_settings or OneNotePageExporterSettings.create_default()
 
     return OneNoteExporter(
         task_factory=OneNoteExportTaskFactory(
