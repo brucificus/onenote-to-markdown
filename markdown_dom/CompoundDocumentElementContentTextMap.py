@@ -20,9 +20,9 @@ _SliceDef = Tuple[
 
 
 class CompoundDocumentElementContentTextMap(AbstractDocumentElementContentText):
-    def __init__(self, yield_element_content_text_references: Callable[[], Iterable[AbstractElementContentTextReference]]):
+    def __init__(self, yield_element_content_text_references: Callable[[], Iterable[AbstractElementContentTextReference]], doc_text_start_index: int = 0):
         self._yield_element_content_text_references = yield_element_content_text_references
-        self._doc_text_start_index: int = 0
+        self._doc_text_start_index: int = doc_text_start_index
         self._text = None
         self._text_len = None
         self._items: Tuple[AbstractDocumentElementContentText, ...] = None
@@ -70,7 +70,11 @@ class CompoundDocumentElementContentTextMap(AbstractDocumentElementContentText):
                     doc_text_start_index=doc_text_start_index,
                     element_text_reference=single_item,
                 )
-        return cls(lambda: items, doc_text_start_index=doc_text_start_index)
+
+        if isinstance(items, Iterable):
+            return cls(lambda: items, doc_text_start_index=doc_text_start_index)
+
+        raise ValueError(f'items must be Iterable, received {type(items)}')
 
     @classmethod
     def from_map_entries(cls, map_entries: Iterable[DocumentElementContentTextMapEntry]) -> AbstractDocumentElementContentText:

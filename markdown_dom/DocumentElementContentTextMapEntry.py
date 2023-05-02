@@ -68,31 +68,31 @@ class DocumentElementContentTextMapEntry(AbstractDocumentElementContentText):
             # Partial removal.
             self._element_text_reference.delete_text(doc_text_start_index - self._doc_text_start_index, text_len)
             return
-        else:
-            updated_parents = ()
 
-            element = self._element_text_reference.element
-            element_parent = element.parent
-            if element_parent is not None:
-                updated_parents += (element_parent,)
-            self._element_text_reference.delete_text_completely()
+        updated_parents = ()
 
-            parent_types_useless_when_empty = (
-                panflute.Para, panflute.BlockQuote, panflute.Emph, panflute.Strong, panflute.Strikeout, panflute.SmallCaps,
-                panflute.Superscript, panflute.Subscript, panflute.Span, panflute.Header, panflute.Div, panflute.Quoted,
-                panflute.ListItem, panflute.OrderedList, panflute.BulletList, panflute.LineItem, panflute.LineBlock,
-                panflute.Caption,
-            )
+        element = self._element_text_reference.element
+        element_parent = element.parent
+        if element_parent is not None:
+            updated_parents += (element_parent,)
+        self._element_text_reference.delete_text_completely()
 
-            while len(updated_parents) > 0:
-                for parent in list(updated_parents):
-                    updated_parents = updated_parents[1:]
-                    if len(parent.content) == 0:
-                        if isinstance(parent, parent_types_useless_when_empty):
-                            if parent.parent is not None:
-                                if parent.parent not in updated_parents:
-                                    updated_parents += (parent.parent,)
-                                parent.parent.content.remove(parent)
+        parent_types_useless_when_empty = (
+            panflute.Para, panflute.BlockQuote, panflute.Emph, panflute.Strong, panflute.Strikeout, panflute.SmallCaps,
+            panflute.Superscript, panflute.Subscript, panflute.Span, panflute.Header, panflute.Div, panflute.Quoted,
+            panflute.ListItem, panflute.OrderedList, panflute.BulletList, panflute.LineItem, panflute.LineBlock,
+            panflute.Caption,
+        )
+
+        while len(updated_parents) > 0:
+            for parent in list(updated_parents):
+                updated_parents = updated_parents[1:]
+                if len(parent.content) == 0:
+                    if isinstance(parent, parent_types_useless_when_empty):
+                        if parent.parent is not None:
+                            if parent.parent not in updated_parents:
+                                updated_parents += (parent.parent,)
+                            parent.parent.content.remove(parent)
 
     def replace_slice_by_doc_text_range(self, doc_text_start_index: int, text_len: int, repl: PanfluteElementLike) -> None:
         raise NotImplementedError()

@@ -31,10 +31,9 @@ def _map_ordinated_asset_extraction_path(original_extraction_path: pathlib.Path,
     asset_ordinal = _determine_asset_ordinal_from_filename(original_filename)
     if asset_ordinal is None and asset_ordinal != 0:
         return None  # Don't extract files that don't have an ordinal.
-    else:
-        suffix = pathlib.Path(original_filename).suffix
-        new_filename = pathlib.Path(f"{assets_filename_stem_prefix}{asset_ordinal:03d}{suffix}")
-        return assets_dir / new_filename
+    suffix = pathlib.Path(original_filename).suffix
+    new_filename = pathlib.Path(f"{assets_filename_stem_prefix}{asset_ordinal:03d}{suffix}")
+    return assets_dir / new_filename
 
 
 def _get_relative_asset_path_from_href(asset_href_raw: str) -> Optional[pathlib.Path]:

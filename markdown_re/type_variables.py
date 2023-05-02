@@ -23,13 +23,12 @@ PanfluteElementLike = Union[
 def normalize_elementlike(elementlike: PanfluteElementLike) -> Sequence[panflute.Element]:
     if isinstance(elementlike, str):
         return (panflute.Str(elementlike),)
-    elif isinstance(elementlike, panflute.Element):
+    if isinstance(elementlike, panflute.Element):
         return (elementlike,)
-    elif isinstance(elementlike, Sequence):
+    if isinstance(elementlike, Sequence):
         return tuple(normalize_elementlike(e) for e in elementlike)
-    elif isinstance(elementlike, Iterable):
+    if isinstance(elementlike, Iterable):
         return tuple(normalize_elementlike(e) for e in elementlike)
-    elif elementlike is None:
+    if elementlike is None:
         return tuple()
-    else:
-        return elementlike
+    return elementlike

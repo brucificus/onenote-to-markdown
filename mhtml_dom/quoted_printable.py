@@ -74,9 +74,8 @@ def decode_quoted_printable_bytes(
             if i == len(_text_decode_methods) - 1:
                 logger.error('Failed to decode quoted-printable text as bytes: %r', text_as_bytes, exc_info=True)
                 raise
-            else:
-                logger.debug('Failed to decode quoted-printable text as bytes using %r.', (decode_encoder, decode_errors), exc_info=True)
-                continue
+            logger.debug('Failed to decode quoted-printable text as bytes using %r.', (decode_encoder, decode_errors), exc_info=True)
+            continue
 
     text = decode_quoted_printable_text(text, is_multiline=is_multiline, possibly_contains_newlines=possibly_contains_newlines)
 
@@ -84,12 +83,10 @@ def decode_quoted_printable_bytes(
         try:
             if reencode_errors:
                 return text.encode(reencode_encoder, errors=reencode_errors)
-            else:
-                return text.encode(reencode_encoder)
+            return text.encode(reencode_encoder)
         except UnicodeEncodeError as e:
             if i == len(_text_reencode_methods) - 1:
                 logger.error('Failed to re-encode quoted-printable text: %r', text, exc_info=True)
                 raise
-            else:
-                logger.debug('Failed to re-encode quoted-printable text using %r.', (reencode_encoder, reencode_errors), exc_info=True)
-                continue
+            logger.debug('Failed to re-encode quoted-printable text using %r.', (reencode_encoder, reencode_errors), exc_info=True)
+            continue

@@ -243,7 +243,7 @@ class MarkdownDocument:
                     element.url = new_element_url
 
         element_filters = tuple(functools.partial(element_filter, url_projection=projection) for projection in url_projections)
-        self.update_via_panflute_filter(element_filters=element_filters)
+        self.update_via_panflute_filters(element_filters=element_filters)
 
     def _run_element_accumulator(self, accumulator: PanfluteElementAccumulator[T]) -> T:
         with accumulator as (element_filter, stop_if):

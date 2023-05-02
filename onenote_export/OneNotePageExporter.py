@@ -121,14 +121,12 @@ class OneNotePageExporter(OneNoteExportTaskBase):
                         had_com_failure = handle_com_failure(e, f"executing subtask {subtask}")
                         if had_com_failure:
                             break
-                        else:
-                            raise
+                        raise
         except Exception as e:
             had_com_failure = had_com_failure or handle_com_failure(e, f"preparing to execute subtasks")
             if had_com_failure:
                 return
-            else:
-                raise
+            raise
 
 
 OneNoteExportTaskBase.register(OneNotePageExporter)

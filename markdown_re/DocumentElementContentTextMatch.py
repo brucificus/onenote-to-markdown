@@ -41,17 +41,16 @@ class DocumentElementContentTextMatch:
                 doc_text_start_index=underlying_group_span[0],
                 text_len=underlying_group_span[1]-underlying_group_span[0],
             )
-        elif len(groups) == 1:
+        if len(groups) == 1:
             underlying_group_span = self._match.span(groups[0])
             return self._document_element_content_text.get_slice_by_doc_text_range(
                 doc_text_start_index=underlying_group_span[0],
                 text_len=underlying_group_span[1]-underlying_group_span[0],
             )
-        else:
-            return tuple(
-                self.group(group)
-                for group in groups
-            )
+        return tuple(
+            self.group(group)
+            for group in groups
+        )
 
     def __getitem__(self, *groups: Union[str, int]) -> Union[AbstractDocumentElementContentText, Tuple[AbstractDocumentElementContentText, ...]]:
         """

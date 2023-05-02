@@ -11,7 +11,6 @@ footer_text_pattern = MarkdownDocumentTextPattern(r'\s*Created with OneNote\.\s*
 
 def _eliminate_footer_text(doc: MarkdownDocument):
     footer_text_pattern.rm(doc)
-    return
 
 
 def page_remove_onenote_footer(context: OneNotePageExportTaskContext, logger: logging.Logger):
