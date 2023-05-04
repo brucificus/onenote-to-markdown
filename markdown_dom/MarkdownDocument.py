@@ -10,9 +10,9 @@ from typing import Iterable, Tuple, Union, Callable, Optional, List
 from markdown_dom.ChangeTrackingPanfluteDocumentContextManager import ChangeTrackingPanfluteDocumentContextManager
 from markdown_dom.PandocMarkdownDocumentExportSettings import PandocMarkdownDocumentExportSettings
 from markdown_dom.PandocMarkdownDocumentImportSettings import PandocMarkdownDocumentImportSettings
-from markdown_dom.PanfluteElementAccumulator import PanfluteElementAccumulator
+from markdown_dom.PanfluteElementAccumulatorElementFilterContext import PanfluteElementAccumulatorElementFilterContext
 from markdown_dom.type_variables import T, PanfluteElementFilter, PanfluteDocumentFilter, PanfluteElementPredicate, \
-    PanfluteImageElementUrlProjection, normalize_elementlike, PanfluteElementLike
+    PanfluteImageElementUrlProjection, normalize_elementlike, PanfluteElementLike, PanfluteElementAccumulatorFunc
 from markdown_dom.AbstractDocumentElementContentText import AbstractDocumentElementContentText
 from markdown_dom.CompoundDocumentElementContentTextMap import CompoundDocumentElementContentTextMap
 from onenote_export import temporary_file
@@ -244,43 +244,30 @@ class MarkdownDocument:
         element_filters = tuple(functools.partial(element_filter, url_projection=projection) for projection in url_projections)
         self.update_via_panflute_filters(element_filters=element_filters)
 
-    def _run_element_accumulator(self, accumulator: PanfluteElementAccumulator[T]) -> T:
-        with accumulator as (element_filter, stop_if):
-            def doc_action(doc: panflute.Doc):
-                panflute.run_filter(action=element_filter, stop_if=stop_if, doc=doc)
-            self._use_panflute_document(doc_action, readonly=True)
+    def accumulate_from_elements(self, accumulator: PanfluteElementAccumulatorFunc, seed: Optional[T] = None, stop_if: Optional[PanfluteElementPredicate] = None) -> T:
+        def _document_filter(doc: panflute.Doc) -> T:
+            return PanfluteElementAccumulatorElementFilterContext.accumulate_from_elements(element=doc, accumulator=accumulator, seed=seed, stop_if=stop_if)
 
-        return accumulator.result
+        return self._use_panflute_document(_document_filter, readonly=True)
 
     def count_elements(self, predicate: PanfluteElementPredicate = None) -> int:
-        if predicate is None:
-            predicate = lambda element, doc: True
+        def _document_filter(doc: panflute.Doc) -> T:
+            return PanfluteElementAccumulatorElementFilterContext.count_elements(element=doc, predicate=predicate)
 
-        def accumulator_func(element: panflute.Element, _: panflute.Doc, count: int) -> int:
-            if predicate(element):
-                return count + 1
-
-            return count
-
-        accumulator = PanfluteElementAccumulator(accumulator_func, seed=0, stop_if=None)
-        return self._run_element_accumulator(accumulator)
+        return self._use_panflute_document(_document_filter, readonly=True)
 
     def any_elements(self, predicate: PanfluteElementPredicate = None) -> bool:
-        if predicate is None:
-            predicate = lambda element, doc: True
+        def _document_filter(doc: panflute.Doc) -> T:
+            return PanfluteElementAccumulatorElementFilterContext.any_elements(element=doc, predicate=predicate)
 
-        stop_now: bool = False
-        def accumulator_func(element: panflute.Element, _: panflute.Doc, count: int) -> int:
-            if predicate(element):
-                nonlocal stop_now
-                stop_now = True
-                return count + 1
+        return self._use_panflute_document(_document_filter, readonly=True)
 
-            return count
+    def all_elements(self, predicate: PanfluteElementPredicate = None) -> bool:
+        def _document_filter(doc: panflute.Doc) -> T:
+            return PanfluteElementAccumulatorElementFilterContext.all_elements(element=doc, predicate=predicate)
 
-        accumulator = PanfluteElementAccumulator(accumulator_func, seed=0, stop_if=lambda _: stop_now)
-        result = self._run_element_accumulator(accumulator)
-        return result > 0
+        return self._use_panflute_document(_document_filter, readonly=True)
+
 
     def use_text_content(self, action: Callable[[Iterable[AbstractDocumentElementContentText]], T], readonly: bool = True) -> T:
         """

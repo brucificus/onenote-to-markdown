@@ -9,6 +9,7 @@ from typing import Callable, Dict, Iterable, Optional, Tuple
 import panflute
 
 from markdown_dom.MarkdownDocument import MarkdownDocument
+from markdown_dom.PanfluteElementAccumulatorElementFilterContext import PanfluteElementAccumulatorElementFilterContext
 from markdown_dom.type_variables import PanfluteElementPredicate, PanfluteElementContainerElementCtor, PanfluteElementFilter
 from markdown_re import PanfluteElementLike
 from onenote_export.OneNotePageExportTaskContext import OneNotePageExportTaskContext
@@ -141,9 +142,31 @@ def _create_predicated_element_filter(predicate: PanfluteElementPredicate, eleme
 
 predicate_filter_pair = Tuple[PanfluteElementPredicate, PanfluteElementFilter]
 
+all_table_elements: PanfluteElementPredicate = lambda e: isinstance(e, (panflute.Table, panflute.TableCell, panflute.TableRow, panflute.TableFoot, panflute.TableHead, panflute.TableBody))
+
+def _has_nongridlike_nested_elements(table: panflute.Table) -> bool:
+    return PanfluteElementAccumulatorElementFilterContext.any_elements(table, lambda e: all_table_elements(e) and ('rowspan' in e.attributes or 'colspan' in e.attributes))
+
+def _has_styled_table_elements(table: panflute.Table) -> bool:
+    return PanfluteElementAccumulatorElementFilterContext.any_elements(table, lambda e: all_table_elements(e) and (('style' in e.attributes and e.attributes['style']) or e.classes))
+
+def _get_parent_table(element: panflute.Element) -> Optional[panflute.Table]:
+    parent = element.parent
+    while parent is not None and not isinstance(parent, panflute.Table):
+        parent = parent.parent
+    return parent
+
+def _is_gridlike_table(table: panflute.Table) -> bool:
+    return isinstance(table, panflute.Table) and not _has_nongridlike_nested_elements(table)
+
+def _is_in_gridlike_table(element: panflute.Element) -> bool:
+    return _is_gridlike_table(_get_parent_table(element))
 
 def _create_styling_element_predicate_filter_pairs(style_settings: OneNotePageContentExportStyleSettings, class_settings: OneNotePageContentExportClassSettings) -> Sequence[predicate_filter_pair]:
     all_div_elements: PanfluteElementPredicate = lambda e: isinstance(e, panflute.Div)
+
+    all_table_elements_in_gridlike_tables: PanfluteElementPredicate = lambda e: all_table_elements(e) and (_is_gridlike_table(e) or _is_in_gridlike_table(e))
+    all_table_elements_in_tables: PanfluteElementPredicate = lambda e: all_table_elements(e) and (isinstance(e, panflute.Table) or _get_parent_table(e))
 
     all_elements_with_style: PanfluteElementPredicate = lambda e: isinstance(e, panflute.Element) and hasattr(e, "attributes") and "style" in e.attributes and e.attributes["style"]
     all_elements_with_classes: PanfluteElementPredicate = lambda e: isinstance(e, panflute.Element) and hasattr(e, "classes") and e.classes
@@ -210,6 +233,8 @@ def _create_styling_element_predicate_filter_pairs(style_settings: OneNotePageCo
         def elements_predicate(element: panflute.Element, style_to_remove: str, style_value_removal_condition: PanfluteElementStyleValuePredicate) -> bool:
             if not base_elements_predicate(element):
                 return False
+            if "style" not in element.attributes:
+                return False
             style_parsed = _parse_html_style_attribute(element.attributes["style"])
             if style_to_remove not in style_parsed:
                 return False
@@ -250,15 +275,26 @@ def _create_styling_element_predicate_filter_pairs(style_settings: OneNotePageCo
                 yield elements_predicate_final, base_filter
 
     style_and_class_updating_element_predicate_filter_pairs: Sequence[predicate_filter_pair] = (
-        *create_stylings_update_filters_for_class_removals(all_elements_with_classes, class_settings.all_elements.removals),
+        *create_stylings_update_filters_for_class_removals(all_table_elements_in_gridlike_tables, class_settings.gridlike_table_elements.removals),
+        *create_stylings_update_filters_for_class_removals(all_table_elements_in_tables, class_settings.all_table_elements.removals),
         *create_stylings_update_filters_for_class_removals(all_div_elements_with_classes, class_settings.divs.removals),
-        *create_stylings_update_filters_for_class_pushes(all_elements_with_classes, class_settings.all_elements.pushes),
-        *create_stylings_update_filters_for_class_pushes(all_div_elements_with_classes, class_settings.divs.pushes),
+        *create_stylings_update_filters_for_class_removals(all_elements_with_classes, class_settings.all_elements.removals),
 
-        *create_stylings_update_filters_for_style_removals(all_elements_with_style, style_settings.all_elements.removals),
+        *create_stylings_update_filters_for_class_pushes(all_table_elements_in_gridlike_tables, class_settings.gridlike_table_elements.pushes),
+        *create_stylings_update_filters_for_class_pushes(all_table_elements_in_tables, class_settings.all_table_elements.pushes),
+        *create_stylings_update_filters_for_class_pushes(all_div_elements_with_classes, class_settings.divs.pushes),
+        *create_stylings_update_filters_for_class_pushes(all_elements_with_classes, class_settings.all_elements.pushes),
+
+
+        *create_stylings_update_filters_for_style_removals(all_table_elements_in_gridlike_tables, style_settings.gridlike_table_elements.removals),
+        *create_stylings_update_filters_for_style_removals(all_table_elements_in_tables, style_settings.all_table_elements.removals),
         *create_stylings_update_filters_for_style_removals(all_div_elements_with_style, style_settings.divs.removals),
-        *create_stylings_update_filters_for_style_pushes(all_elements_with_style, style_settings.all_elements.pushes),
+        *create_stylings_update_filters_for_style_removals(all_elements_with_style, style_settings.all_elements.removals),
+
+        *create_stylings_update_filters_for_style_pushes(all_table_elements_in_gridlike_tables, style_settings.gridlike_table_elements.pushes),
+        *create_stylings_update_filters_for_style_pushes(all_table_elements_in_tables, style_settings.all_table_elements.pushes),
         *create_stylings_update_filters_for_style_pushes(all_div_elements_with_style, style_settings.divs.pushes),
+        *create_stylings_update_filters_for_style_pushes(all_elements_with_style, style_settings.all_elements.pushes),
     )
 
     return style_and_class_updating_element_predicate_filter_pairs

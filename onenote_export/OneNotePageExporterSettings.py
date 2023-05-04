@@ -30,12 +30,16 @@ class OneNotePageContentExportElementClassSettings:
 class OneNotePageContentExportStyleSettings:
     all_elements: OneNotePageContentExportElementStyleSettings
     divs: OneNotePageContentExportElementStyleSettings
+    all_table_elements: OneNotePageContentExportElementStyleSettings
+    gridlike_table_elements: OneNotePageContentExportElementStyleSettings
 
 
 @dataclasses.dataclass
 class OneNotePageContentExportClassSettings:
     all_elements: OneNotePageContentExportElementClassSettings
     divs: OneNotePageContentExportElementClassSettings
+    all_table_elements: OneNotePageContentExportElementClassSettings
+    gridlike_table_elements: OneNotePageContentExportElementClassSettings
 
 
 @dataclasses.dataclass
@@ -52,7 +56,7 @@ class OneNotePageExporterSettings:
                 all_elements=OneNotePageContentExportElementStyleSettings(
                     removals={
                         'direction': ('ltr',),
-                        'font-family': ('Calibri', 'Segoe UI Emoji', 'inherit'),
+                        'font-family': ('Calibri', 'Segoe UI Emoji', 'Segoe UI Symbol','inherit'),
                         'font-size': ('11.0pt',),
                         'font-weight': ('normal',),
                         'font-style': ('normal',),
@@ -79,7 +83,36 @@ class OneNotePageExporterSettings:
                         'border-width': lambda v: True,
                     },
                     pushes={},
-                )
+                ),
+                all_table_elements=OneNotePageContentExportElementStyleSettings(
+                    removals={
+                        'border-color': lambda v: True,
+                        'border-style': lambda v: v == 'solid',
+                        'border-width': lambda v: True,
+                        'vertical-align': lambda v: v == 'top',
+                        'border-collapse': lambda v: v == 'collapse',
+                        'font-size': lambda v, u: (abs(v - 1.0) < 0.01) and u == 'pt',
+                    },
+                    pushes={},
+                ),
+                gridlike_table_elements=OneNotePageContentExportElementStyleSettings(
+                    removals={
+                        'width': lambda v: True,
+                        'height': lambda v: True,
+                        'padding': lambda v: True,
+                        'margin': lambda v: True,
+                        'margin-top': lambda v: True,
+                        'margin-left': lambda v: True,
+                        'margin-right': lambda v: True,
+                        'margin-bottom': lambda v: True,
+                        'padding-top': lambda v: True,
+                        'padding-left': lambda v: True,
+                        'padding-right': lambda v: True,
+                        'padding-bottom': lambda v: True,
+
+                    },
+                    pushes={},
+                ),
             ),
             pages_content_class_settings=OneNotePageContentExportClassSettings(
                 all_elements=OneNotePageContentExportElementClassSettings(
@@ -90,6 +123,17 @@ class OneNotePageExporterSettings:
                 ),
                 divs=OneNotePageContentExportElementClassSettings(
                     removals=(),
+                    pushes={},
+                ),
+                all_table_elements=OneNotePageContentExportElementClassSettings(
+                    removals=(),
+                    pushes={},
+                ),
+                gridlike_table_elements=OneNotePageContentExportElementClassSettings(
+                    removals=(
+                        'even',
+                        'odd',
+                    ),
                     pushes={},
                 ),
             ),
