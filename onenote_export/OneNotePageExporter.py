@@ -9,6 +9,7 @@ from .OneNoteExportTaskFactory import OneNoteExportTaskFactory
 from .OneNotePageExportTaskContext import OneNotePageExportTaskContext
 from .OneNotePageExporterSettings import OneNotePageExporterSettings
 from .page_export_tasks import *
+from .page_export_tasks.page_remove_data_attributes import page_remove_data_attributes
 from .page_export_tasks.page_remove_onenote_footer import page_remove_onenote_footer
 from .page_export_tasks.page_remove_redundant_vestigial_stylings import page_remove_redundant_vestigial_stylings
 
@@ -68,27 +69,48 @@ class OneNotePageExporter(OneNoteExportTaskBase):
         )
         yield task_pdf_patch_images_into_md
 
-        final_save_task_prereqs = (task_pdf_patch_images_into_md,)
+        undepended_tasks = (
+            task_page_extract_ordinated_assets_and_relink,
+            task_pdf_patch_images_into_md,
+        )
 
-        if self._settings.pages_remove_onenote_footer:
-            task_page_remove_onenote_footer = create_subtask(
-                task_spec=page_remove_onenote_footer,
-                prerequisites=(task_page_reparse_embedded_html,)
+        major_document_content_shifts_prereqs = ()
+
+        if self._settings.pages_data_attribute_settings:
+            major_document_content_shifts_prereqs += undepended_tasks
+            undepended_tasks = ()
+            task_page_remove_data_attributes = create_subtask(
+                task_spec=page_remove_data_attributes,
+                prerequisites=major_document_content_shifts_prereqs
             )
-            final_save_task_prereqs += (task_page_remove_onenote_footer,)
-            yield task_page_remove_onenote_footer
+            undepended_tasks += (task_page_remove_data_attributes,)
+            yield task_page_remove_data_attributes
 
-        if self._settings.pages_content_class_settings or self._settings.pages_content_class_settings:
+        if self._settings.pages_content_class_settings or self._settings.pages_content_style_settings:
+            major_document_content_shifts_prereqs += undepended_tasks
+            undepended_tasks = ()
             task_page_remove_redundant_vestigial_stylings = create_subtask(
                 task_spec=page_remove_redundant_vestigial_stylings,
-                prerequisites=(task_page_reparse_embedded_html,)
+                prerequisites=major_document_content_shifts_prereqs,
             )
-            final_save_task_prereqs += (task_page_remove_redundant_vestigial_stylings,)
+            undepended_tasks += (task_page_remove_redundant_vestigial_stylings,)
             yield task_page_remove_redundant_vestigial_stylings
+
+        text_search_patches_prereqs = ()
+
+        if self._settings.pages_remove_onenote_footer:
+            text_search_patches_prereqs += undepended_tasks
+            undepended_tasks = ()
+            task_page_remove_onenote_footer = create_subtask(
+                task_spec=page_remove_onenote_footer,
+                prerequisites=text_search_patches_prereqs
+            )
+            undepended_tasks += (task_page_remove_onenote_footer,)
+            yield task_page_remove_onenote_footer
 
         task_export_pandoc_ast_to_markdown_file = create_subtask(
             task_spec=page_export_pandoc_ast_to_markdown_file,
-            prerequisites=final_save_task_prereqs
+            prerequisites=undepended_tasks
         )
         yield task_export_pandoc_ast_to_markdown_file
 

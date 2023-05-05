@@ -28,6 +28,9 @@ PanfluteElementAccumulatorFunc = Callable[[panflute.Element, panflute.Doc, T], T
 PanfluteElementStyleValuePredicateSingular = Union[str, Callable[[str], bool], Callable[[float, str], bool]]
 PanfluteElementStyleValuePredicate = Union[PanfluteElementStyleValuePredicateSingular, Sequence[PanfluteElementStyleValuePredicateSingular], Iterable[PanfluteElementStyleValuePredicateSingular]]
 
+PanfluteElementAttributeValuePredicateSingular = Union[str, Callable[[str], bool]]
+PanfluteElementAttributeValuePredicate = Union[PanfluteElementAttributeValuePredicateSingular, Sequence[PanfluteElementAttributeValuePredicateSingular], Iterable[PanfluteElementAttributeValuePredicateSingular]]
+
 
 def normalize_elementlike(elementlike: PanfluteElementLike, *, sequence_type: Optional[Union[Type[Sequence], Callable[[Iterable], Sequence]]] = tuple) -> Sequence[panflute.Element]:
     if elementlike is None:

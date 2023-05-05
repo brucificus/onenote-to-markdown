@@ -5,7 +5,8 @@ from typing import Dict
 
 import panflute
 
-from markdown_dom.type_variables import PanfluteElementContainerElementCtor, PanfluteElementStyleValuePredicate
+from markdown_dom.type_variables import PanfluteElementContainerElementCtor, PanfluteElementStyleValuePredicate, \
+    PanfluteElementAttributeValuePredicate
 
 OneNotePageContentStyleExportElementStyleRemovals = Dict[str, PanfluteElementStyleValuePredicate]
 OneNotePageContentStyleExportElementStyleElementPushes = Dict[str, Dict[str, PanfluteElementContainerElementCtor]]
@@ -13,11 +14,18 @@ OneNotePageContentStyleExportElementStyleElementPushes = Dict[str, Dict[str, Pan
 OneNotePageContentStyleExportElementClassRemovals = Sequence[str]
 OneNotePageContentStyleExportElementClassElementPushes = Dict[str, PanfluteElementContainerElementCtor]
 
+OneNotePageContentStyleExportElementDataStyleRemovals = Dict[str, PanfluteElementAttributeValuePredicate]
+
 
 @dataclasses.dataclass
 class OneNotePageContentExportElementStyleSettings:
     removals: OneNotePageContentStyleExportElementStyleRemovals
     pushes: OneNotePageContentStyleExportElementStyleElementPushes
+
+
+@dataclasses.dataclass
+class OneNotePageContentExportElementDataAttributeSettings:
+    removals: OneNotePageContentStyleExportElementDataStyleRemovals
 
 
 @dataclasses.dataclass
@@ -43,8 +51,14 @@ class OneNotePageContentExportClassSettings:
 
 
 @dataclasses.dataclass
+class OneNotePageContentExportDataAttributeSettings:
+    all_elements: OneNotePageContentExportElementDataAttributeSettings
+
+
+@dataclasses.dataclass
 class OneNotePageExporterSettings:
     pages_remove_onenote_footer: bool
+    pages_data_attribute_settings: OneNotePageContentExportDataAttributeSettings
     pages_content_style_settings: OneNotePageContentExportStyleSettings
     pages_content_class_settings: OneNotePageContentExportClassSettings
 
@@ -52,11 +66,22 @@ class OneNotePageExporterSettings:
     def create_default(cls):
         return cls(
             pages_remove_onenote_footer=True,
+            pages_data_attribute_settings=OneNotePageContentExportDataAttributeSettings(
+                all_elements=OneNotePageContentExportElementDataAttributeSettings(
+                    removals={
+                        'valign': lambda v: v == 'top',
+                        'border': lambda _: True,
+                        'cellpadding': lambda _: True,
+                        'cellspacing': lambda _: True,
+                        'summary': lambda v: v and v.strip() != '',
+                    }
+                ),
+            ),
             pages_content_style_settings=OneNotePageContentExportStyleSettings(
                 all_elements=OneNotePageContentExportElementStyleSettings(
                     removals={
                         'direction': ('ltr',),
-                        'font-family': ('Calibri', 'Segoe UI Emoji', 'Segoe UI Symbol','inherit'),
+                        'font-family': ('Calibri', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Segoe UI Light', 'inherit'),
                         'font-size': ('11.0pt',),
                         'font-weight': ('normal',),
                         'font-style': ('normal',),
