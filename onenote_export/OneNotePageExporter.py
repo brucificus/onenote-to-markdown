@@ -9,7 +9,7 @@ from .OneNoteExportTaskFactory import OneNoteExportTaskFactory
 from .OneNotePageExportTaskContext import OneNotePageExportTaskContext
 from .OneNotePageExporterSettings import OneNotePageExporterSettings
 from .page_export_tasks import *
-from .page_export_tasks.page_remove_data_attributes import page_remove_data_attributes
+from .page_export_tasks.page_remove_extraneous_element_attributes import page_remove_extraneous_element_attributes
 from .page_export_tasks.page_remove_onenote_footer import page_remove_onenote_footer
 from .page_export_tasks.page_remove_redundant_vestigial_stylings import page_remove_redundant_vestigial_stylings
 
@@ -76,15 +76,15 @@ class OneNotePageExporter(OneNoteExportTaskBase):
 
         major_document_content_shifts_prereqs = ()
 
-        if self._settings.pages_data_attribute_settings:
+        if self._settings.pages_extra_attributes_settings:
             major_document_content_shifts_prereqs += undepended_tasks
             undepended_tasks = ()
-            task_page_remove_data_attributes = create_subtask(
-                task_spec=page_remove_data_attributes,
+            task_page_remove_extraneous_element_attributes = create_subtask(
+                task_spec=page_remove_extraneous_element_attributes,
                 prerequisites=major_document_content_shifts_prereqs
             )
-            undepended_tasks += (task_page_remove_data_attributes,)
-            yield task_page_remove_data_attributes
+            undepended_tasks += (task_page_remove_extraneous_element_attributes,)
+            yield task_page_remove_extraneous_element_attributes
 
         if self._settings.pages_content_class_settings or self._settings.pages_content_style_settings:
             major_document_content_shifts_prereqs += undepended_tasks

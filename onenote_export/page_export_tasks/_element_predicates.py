@@ -48,7 +48,20 @@ def element_is_table_element(element: panflute.Element) -> bool:
 
 
 def element_has_nongridlike_nested_elements(table: panflute.Table) -> bool:
-    return PanfluteElementAccumulatorElementFilterContext.any_elements(table, lambda e: element_is_table_element(e) and ('rowspan' in e.attributes or 'colspan' in e.attributes))
+    def _table_element_has_meaningful_rowspan(element: panflute.Element) -> bool:
+        return element_has_attribute(element, "rowspan") \
+            and element.attributes["rowspan"] != '' \
+            and int(element.attributes["rowspan"]) > 1
+
+    def _table_element_has_meaningful_colspan(element: panflute.Element) -> bool:
+        return element_has_attribute(element, "colspan") \
+            and element.attributes["colspan"] != '' \
+            and int(element.attributes["colspan"]) > 1
+
+    def _table_element_has_meaningful_rowspan_or_colspan(element: panflute.Element) -> bool:
+        return _table_element_has_meaningful_rowspan(element) or _table_element_has_meaningful_colspan(element)
+
+    return PanfluteElementAccumulatorElementFilterContext.any_elements(table, lambda e: element_is_table_element(e) and _table_element_has_meaningful_rowspan_or_colspan(e))
 
 
 def element_has_styled_table_elements(table: panflute.Table) -> bool:
@@ -128,18 +141,11 @@ def element_is_valid_for_children_promotion(element: panflute.Element) -> bool:
     return classes_empty and attributes_empty and element_type_pairs_valid
 
 
-def element_has_data_attributes(element: panflute.Element) -> bool:
-    return isinstance(element, panflute.Element) \
-        and hasattr(element, "attributes") \
-        and any(attribute_name.startswith("data-") for attribute_name in element.attributes)
-
-
-def element_has_data_attribute_value(element, data_attribute_name_suffix: str, data_attribute_value_condition: PanfluteElementAttributeValuePredicate):
-    if not element_has_data_attributes(element):
+def element_has_attribute_value(element, attribute_name: str, attribute_value_condition: PanfluteElementAttributeValuePredicate):
+    if not element_has_attributes(element):
         return False
 
-    data_attribute_name = f"data-{data_attribute_name_suffix}"
-    if data_attribute_name not in element.attributes:
+    if attribute_name not in element.attributes:
         return False
-    data_attribute_value = element.attributes[data_attribute_name]
-    return attribute_value_is_match(data_attribute_value, data_attribute_value_condition)
+    attribute_value = element.attributes[attribute_name]
+    return attribute_value_is_match(attribute_value, attribute_value_condition)

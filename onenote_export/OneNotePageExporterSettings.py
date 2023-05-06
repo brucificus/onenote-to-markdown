@@ -24,7 +24,7 @@ class OneNotePageContentExportElementStyleSettings:
 
 
 @dataclasses.dataclass
-class OneNotePageContentExportElementDataAttributeSettings:
+class OneNotePageContentExportElementExtraAttributesSettings:
     removals: OneNotePageContentStyleExportElementDataStyleRemovals
 
 
@@ -51,14 +51,14 @@ class OneNotePageContentExportClassSettings:
 
 
 @dataclasses.dataclass
-class OneNotePageContentExportDataAttributeSettings:
-    all_elements: OneNotePageContentExportElementDataAttributeSettings
+class OneNotePageContentExportExtraAttributesSettings:
+    all_elements: OneNotePageContentExportElementExtraAttributesSettings
 
 
 @dataclasses.dataclass
 class OneNotePageExporterSettings:
     pages_remove_onenote_footer: bool
-    pages_data_attribute_settings: OneNotePageContentExportDataAttributeSettings
+    pages_extra_attributes_settings: OneNotePageContentExportExtraAttributesSettings
     pages_content_style_settings: OneNotePageContentExportStyleSettings
     pages_content_class_settings: OneNotePageContentExportClassSettings
 
@@ -66,14 +66,19 @@ class OneNotePageExporterSettings:
     def create_default(cls):
         return cls(
             pages_remove_onenote_footer=True,
-            pages_data_attribute_settings=OneNotePageContentExportDataAttributeSettings(
-                all_elements=OneNotePageContentExportElementDataAttributeSettings(
+            pages_extra_attributes_settings=OneNotePageContentExportExtraAttributesSettings(
+                all_elements=OneNotePageContentExportElementExtraAttributesSettings(
                     removals={
                         'valign': lambda v: v == 'top',
                         'border': lambda _: True,
                         'cellpadding': lambda _: True,
                         'cellspacing': lambda _: True,
                         'summary': lambda v: v and v.strip() != '',
+                        'data-valign': lambda v: v == 'top',
+                        'data-border': lambda _: True,
+                        'data-cellpadding': lambda _: True,
+                        'data-cellspacing': lambda _: True,
+                        'data-summary': lambda v: v and v.strip() != '',
                     }
                 ),
             ),
