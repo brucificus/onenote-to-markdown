@@ -56,7 +56,7 @@ def _create_attribute_cleaning_element_predicate_filter_pairs(attribute_settings
 def page_remove_extraneous_element_attributes(context: OneNotePageExportTaskContext, settings: OneNotePageExporterSettings, logger: logging.Logger):
     attribute_settings = settings.pages_extra_attributes_settings
 
-    logger.info(f"💄 Removing vestigial data attributes: '{context.output_md_path}'")
+    logger.info(f"💄 Removing vestigial element attributes: '{context.output_md_path}'")
     doc = context.output_md_document
     attribute_cleaning_element_predicate_filter_pairs = _create_attribute_cleaning_element_predicate_filter_pairs(attribute_settings)
     document_apply_element_predicate_filter_pairs_continuously_until_steady_state(doc, attribute_cleaning_element_predicate_filter_pairs)
