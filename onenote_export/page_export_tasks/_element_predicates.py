@@ -149,3 +149,24 @@ def element_has_attribute_value(element, attribute_name: str, attribute_value_co
         return False
     attribute_value = element.attributes[attribute_name]
     return attribute_value_is_match(attribute_value, attribute_value_condition)
+
+
+def element_is_redundant_paragraph(element: panflute.Element) -> bool:
+    if not isinstance(element, panflute.Para):
+        return False
+
+    if not isinstance(element.parent, (panflute.Span, panflute.ListItem, panflute.TableCell, panflute.TableHead, panflute.TableBody, panflute.TableFoot)):
+        return False
+
+    if element_has_classes(element) or element_has_attributes(element):
+        return False
+
+    siblings_count = len(element.parent.content) - 1
+    if siblings_count > 0:
+        return False
+
+    single_child = element.content[0] if len(element.content) == 1 else None
+    if single_child and isinstance(single_child, element.container.oktypes):
+        return True
+
+    return issubclass(panflute.Plain, element.container.oktypes)

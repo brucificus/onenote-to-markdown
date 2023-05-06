@@ -9,6 +9,7 @@ from .OneNoteExportTaskFactory import OneNoteExportTaskFactory
 from .OneNotePageExportTaskContext import OneNotePageExportTaskContext
 from .OneNotePageExporterSettings import OneNotePageExporterSettings
 from .page_export_tasks import *
+from .page_export_tasks.page_eject_redundant_paragraph_elements import page_eject_redundant_paragraph_elements
 from .page_export_tasks.page_remove_extraneous_element_attributes import page_remove_extraneous_element_attributes
 from .page_export_tasks.page_remove_onenote_footer import page_remove_onenote_footer
 from .page_export_tasks.page_remove_redundant_vestigial_stylings import page_remove_redundant_vestigial_stylings
@@ -74,10 +75,9 @@ class OneNotePageExporter(OneNoteExportTaskBase):
             task_pdf_patch_images_into_md,
         )
 
-        major_document_content_shifts_prereqs = ()
-
+        task_page_remove_extraneous_element_attributes = None
         if self._settings.pages_extra_attributes_settings:
-            major_document_content_shifts_prereqs += undepended_tasks
+            major_document_content_shifts_prereqs = undepended_tasks
             undepended_tasks = ()
             task_page_remove_extraneous_element_attributes = create_subtask(
                 task_spec=page_remove_extraneous_element_attributes,
@@ -86,8 +86,9 @@ class OneNotePageExporter(OneNoteExportTaskBase):
             undepended_tasks += (task_page_remove_extraneous_element_attributes,)
             yield task_page_remove_extraneous_element_attributes
 
+        task_page_remove_redundant_vestigial_stylings = None
         if self._settings.pages_content_class_settings or self._settings.pages_content_style_settings:
-            major_document_content_shifts_prereqs += undepended_tasks
+            major_document_content_shifts_prereqs = undepended_tasks
             undepended_tasks = ()
             task_page_remove_redundant_vestigial_stylings = create_subtask(
                 task_spec=page_remove_redundant_vestigial_stylings,
@@ -96,10 +97,18 @@ class OneNotePageExporter(OneNoteExportTaskBase):
             undepended_tasks += (task_page_remove_redundant_vestigial_stylings,)
             yield task_page_remove_redundant_vestigial_stylings
 
-        text_search_patches_prereqs = ()
+        if task_page_remove_redundant_vestigial_stylings or task_page_remove_extraneous_element_attributes:
+            major_document_content_shifts_prereqs = undepended_tasks
+            undepended_tasks = ()
+            task_page_eject_redundant_paragraph_elements = create_subtask(
+                task_spec=page_eject_redundant_paragraph_elements,
+                prerequisites=major_document_content_shifts_prereqs,
+            )
+            undepended_tasks += (task_page_eject_redundant_paragraph_elements,)
+            yield task_page_eject_redundant_paragraph_elements
 
         if self._settings.pages_remove_onenote_footer:
-            text_search_patches_prereqs += undepended_tasks
+            text_search_patches_prereqs = undepended_tasks
             undepended_tasks = ()
             task_page_remove_onenote_footer = create_subtask(
                 task_spec=page_remove_onenote_footer,
