@@ -13,6 +13,7 @@ from .page_export_tasks.page_eject_redundant_paragraph_elements import page_ejec
 from .page_export_tasks.page_remove_extraneous_element_attributes import page_remove_extraneous_element_attributes
 from .page_export_tasks.page_remove_onenote_footer import page_remove_onenote_footer
 from .page_export_tasks.page_remove_redundant_vestigial_stylings import page_remove_redundant_vestigial_stylings
+from .page_export_tasks.page_table_element_colspec_cleanup import page_table_element_colspec_cleanup
 
 
 class OneNotePageExporter(OneNoteExportTaskBase):
@@ -85,6 +86,16 @@ class OneNotePageExporter(OneNoteExportTaskBase):
             )
             undepended_tasks += (task_page_remove_extraneous_element_attributes,)
             yield task_page_remove_extraneous_element_attributes
+
+        if self._settings.pages_table_element_colspec_handling:
+            major_document_content_shifts_prereqs = undepended_tasks
+            undepended_tasks = ()
+            task_page_table_element_colspec_cleanup = create_subtask(
+                task_spec=page_table_element_colspec_cleanup,
+                prerequisites=major_document_content_shifts_prereqs
+            )
+            undepended_tasks += (task_page_table_element_colspec_cleanup,)
+            yield task_page_table_element_colspec_cleanup
 
         task_page_remove_redundant_vestigial_stylings = None
         if self._settings.pages_content_class_settings or self._settings.pages_content_style_settings:

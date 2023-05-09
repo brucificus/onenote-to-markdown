@@ -1,7 +1,7 @@
 import dataclasses
 
 from collections.abc import Sequence
-from typing import Dict
+from typing import Dict, Literal, Union
 
 import panflute
 
@@ -61,6 +61,7 @@ class OneNotePageExporterSettings:
     pages_extra_attributes_settings: OneNotePageContentExportExtraAttributesSettings
     pages_content_style_settings: OneNotePageContentExportStyleSettings
     pages_content_class_settings: OneNotePageContentExportClassSettings
+    pages_table_element_colspec_handling: Union[None, Literal['remove_all_width_specifiers']] = 'reset_all_width_specifiers'
 
     @classmethod
     def create_default(cls):
@@ -73,12 +74,14 @@ class OneNotePageExporterSettings:
                         'border': lambda _: True,
                         'cellpadding': lambda _: True,
                         'cellspacing': lambda _: True,
-                        'summary': lambda v: v and v.strip() != '',
+                        'title': lambda v: (not v) or (v.strip() == ''),
+                        'summary': lambda v: (not v) or (v.strip() == ''),
                         'data-valign': lambda v: v == 'top',
                         'data-border': lambda _: True,
                         'data-cellpadding': lambda _: True,
                         'data-cellspacing': lambda _: True,
-                        'data-summary': lambda v: v and v.strip() != '',
+                        'data-title': lambda v: (not v) or (v.strip() == ''),
+                        'data-summary': lambda v: (not v) or (v.strip() == ''),
                     }
                 ),
             ),
