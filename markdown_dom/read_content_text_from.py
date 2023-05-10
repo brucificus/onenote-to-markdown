@@ -84,15 +84,15 @@ def set_content_text_to_RawBlock(e: panflute.RawBlock, new_text: str) -> None:
 
 
 def read_content_text_from_Code(e: panflute.Code) -> str:
-    raise NotImplementedError()
+    return e.text
 
 
 def len_content_text_from_Code(e: panflute.Code) -> int:
-    raise NotImplementedError()
+    return len(e.text)
 
 
 def set_content_text_to_Code(e: panflute.Code, new_text: str) -> None:
-    raise NotImplementedError()
+    e.text = new_text
 
 
 def read_content_text_from_Math(e: panflute.Math) -> str:
