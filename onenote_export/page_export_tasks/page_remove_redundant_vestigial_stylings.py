@@ -5,6 +5,8 @@ from typing import Iterable
 
 import panflute
 
+from markdown_dom.PanfluteElementPredicateFilterPair import PanfluteElementPredicateFilterPair, \
+    AbstractPanfluteElementPredicateFilterPair
 from markdown_dom.type_variables import PanfluteElementPredicate
 from markdown_re import PanfluteElementLike
 from onenote_export.OneNotePageExportTaskContext import OneNotePageExportTaskContext
@@ -17,12 +19,11 @@ from onenote_export.page_export_tasks._element_predicates import element_is_tabl
     element_is_div_with_any_classes, element_is_valid_for_children_promotion, element_has_specific_class, \
     element_has_specific_style_value
 from onenote_export.page_export_tasks._element_updates import push_element_content, \
-    promote_element_children, create_predicated_element_filter, predicate_filter_pair, \
-    document_apply_element_predicate_filter_pairs_continuously_until_steady_state
+    promote_element_children, document_apply_element_predicate_filter_pairs_continuously_until_steady_state
 from onenote_export.page_export_tasks._style_attribute import parse_html_style_attribute, build_html_style_attribute
 
 
-def _create_styling_element_predicate_filter_pairs(style_settings: OneNotePageContentExportStyleSettings, class_settings: OneNotePageContentExportClassSettings) -> Sequence[predicate_filter_pair]:
+def _create_styling_element_predicate_filter_pairs(style_settings: OneNotePageContentExportStyleSettings, class_settings: OneNotePageContentExportClassSettings) -> Sequence[PanfluteElementPredicateFilterPair]:
     def conclude_element_classes_update(element: panflute.Element, classes_changed: bool) -> PanfluteElementLike:
         # If we made "major" changes to the element, making it redundant, remove it.
         should_promote_children = classes_changed and element_is_valid_for_children_promotion(element)
@@ -47,60 +48,60 @@ def _create_styling_element_predicate_filter_pairs(style_settings: OneNotePageCo
 
         return element
 
-    def create_stylings_update_filters_for_class_removals(base_elements_predicate: PanfluteElementPredicate, removals: OneNotePageContentStyleExportElementClassRemovals) -> Iterable[predicate_filter_pair]:
+    def create_stylings_update_filters_for_class_removals(base_elements_predicate: PanfluteElementPredicate, removals: OneNotePageContentStyleExportElementClassRemovals) -> Iterable[AbstractPanfluteElementPredicateFilterPair]:
         @functools.wraps(base_elements_predicate)
-        def elements_predicate(element: panflute.Element, class_to_remove: str) -> bool:
+        def valid_for_remove_specific_class(element: panflute.Element, class_to_remove: str) -> bool:
             return base_elements_predicate(element) and element_has_specific_class(element, class_to_remove)
 
-        def update_stylings_class_removals(element: panflute.Element, _: panflute.Doc, class_to_remove: str) -> PanfluteElementLike:
+        def remove_specific_class(element: panflute.Element, _: panflute.Doc, class_to_remove: str) -> PanfluteElementLike:
             element.classes.remove(class_to_remove)
             return conclude_element_classes_update(element, classes_changed=True)
 
         for class_to_remove in removals:
-            elements_predicate_final = functools.partial(elements_predicate, class_to_remove=class_to_remove)
-            base_filter = functools.partial(update_stylings_class_removals, class_to_remove=class_to_remove)
-            yield elements_predicate_final, base_filter
+            final_predicate = functools.partial(valid_for_remove_specific_class, class_to_remove=class_to_remove)
+            final_filter = functools.partial(remove_specific_class, class_to_remove=class_to_remove)
+            yield PanfluteElementPredicateFilterPair(final_predicate, final_filter)
 
-    def create_stylings_update_filters_for_class_pushes(base_elements_predicate: PanfluteElementPredicate, pushes: OneNotePageContentStyleExportElementClassElementPushes) -> Iterable[predicate_filter_pair]:
+    def create_stylings_update_filters_for_class_pushes(base_elements_predicate: PanfluteElementPredicate, pushes: OneNotePageContentStyleExportElementClassElementPushes) -> Iterable[AbstractPanfluteElementPredicateFilterPair]:
         @functools.wraps(base_elements_predicate)
-        def elements_predicate(element: panflute.Element, class_to_push: str) -> bool:
+        def valid_for_push_specific_class(element: panflute.Element, class_to_push: str) -> bool:
             return base_elements_predicate(element) and element_has_specific_class(element, class_to_push)
 
-        def update_stylings_class_pushes(element: panflute.Element, _: panflute.Doc, class_to_push: str) -> PanfluteElementLike:
-            element.classes.remove(class_to_push)
+        def push_specific_class(element: panflute.Element, _: panflute.Doc, class_to_push: str) -> PanfluteElementLike:
             new_child_element_type = pushes[class_to_push]
             push_element_content(element, new_child_element_type)
+            element.classes.remove(class_to_push)
             return conclude_element_classes_update(element, classes_changed=True)
 
         for class_to_push in pushes:
-            elements_predicate_final = functools.partial(elements_predicate, class_to_push=class_to_push)
-            base_filter = functools.partial(update_stylings_class_pushes, class_to_push=class_to_push)
-            yield elements_predicate_final, base_filter
+            final_predicate = functools.partial(valid_for_push_specific_class, class_to_push=class_to_push)
+            final_filter = functools.partial(push_specific_class, class_to_push=class_to_push)
+            yield PanfluteElementPredicateFilterPair(final_predicate, final_filter)
 
-    def create_stylings_update_filters_for_style_removals(base_elements_predicate: PanfluteElementPredicate, removals: OneNotePageContentStyleExportElementStyleRemovals) -> Iterable[predicate_filter_pair]:
+    def create_stylings_update_filters_for_style_removals(base_elements_predicate: PanfluteElementPredicate, removals: OneNotePageContentStyleExportElementStyleRemovals) -> Iterable[AbstractPanfluteElementPredicateFilterPair]:
         @functools.wraps(base_elements_predicate)
-        def elements_predicate(element: panflute.Element, style_to_remove: str, style_value_removal_condition: PanfluteElementStyleValuePredicate) -> bool:
+        def valid_for_remove_specific_style(element: panflute.Element, style_to_remove: str, style_value_removal_condition: PanfluteElementStyleValuePredicate) -> bool:
             return base_elements_predicate(element) \
                 and element_has_specific_style_value(element, style_to_remove, style_value_removal_condition)
 
-        def update_stylings_style_removals(element: panflute.Element, _: panflute.Doc, style_to_remove: str) -> PanfluteElementLike:
+        def remove_specific_style(element: panflute.Element, _: panflute.Doc, style_to_remove: str) -> PanfluteElementLike:
             style_parsed = parse_html_style_attribute(element.attributes["style"])
             style_parsed.pop(style_to_remove)
             return conclude_element_style_update(element, style_parsed, style_changed=True)
 
         for style_to_remove in removals:
             style_value_removal_condition = removals[style_to_remove]
-            elements_predicate_final = functools.partial(elements_predicate, style_to_remove=style_to_remove, style_value_removal_condition=style_value_removal_condition)
-            base_filter = functools.partial(update_stylings_style_removals, style_to_remove=style_to_remove)
-            yield elements_predicate_final, base_filter
+            final_predicate = functools.partial(valid_for_remove_specific_style, style_to_remove=style_to_remove, style_value_removal_condition=style_value_removal_condition)
+            final_filter = functools.partial(remove_specific_style, style_to_remove=style_to_remove)
+            yield PanfluteElementPredicateFilterPair(final_predicate, final_filter)
 
-    def create_stylings_update_filters_for_style_pushes(base_elements_predicate: PanfluteElementPredicate, pushes: OneNotePageContentStyleExportElementStyleElementPushes) -> Iterable[predicate_filter_pair]:
+    def create_stylings_update_filters_for_style_pushes(base_elements_predicate: PanfluteElementPredicate, pushes: OneNotePageContentStyleExportElementStyleElementPushes) -> Iterable[AbstractPanfluteElementPredicateFilterPair]:
         @functools.wraps(base_elements_predicate)
-        def elements_predicate(element: panflute.Element, style_to_push: str, style_value_to_push: PanfluteElementStyleValuePredicate) -> bool:
+        def valid_for_push_specific_style(element: panflute.Element, style_to_push: str, style_value_to_push: PanfluteElementStyleValuePredicate) -> bool:
             return base_elements_predicate(element) \
                 and element_has_specific_style_value(element, style_to_push, style_value_to_push)
 
-        def update_stylings_style_pushes(element: panflute.Element, _: panflute.Doc, style_to_push: str, style_value_to_push: str) -> PanfluteElementLike:
+        def push_specific_style(element: panflute.Element, _: panflute.Doc, style_to_push: str, style_value_to_push: str) -> PanfluteElementLike:
             style_parsed = parse_html_style_attribute(element.attributes["style"])
             style_parsed.pop(style_to_push)
             new_child_element_type = pushes[style_to_push][style_value_to_push]
@@ -109,11 +110,11 @@ def _create_styling_element_predicate_filter_pairs(style_settings: OneNotePageCo
 
         for style_to_push in pushes:
             for style_value_to_push in pushes[style_to_push]:
-                elements_predicate_final = functools.partial(elements_predicate, style_to_push=style_to_push, style_value_to_push=style_value_to_push)
-                base_filter = functools.partial(update_stylings_style_pushes, style_to_push=style_to_push, style_value_to_push=style_value_to_push)
-                yield elements_predicate_final, base_filter
+                final_predicate = functools.partial(valid_for_push_specific_style, style_to_push=style_to_push, style_value_to_push=style_value_to_push)
+                final_filter = functools.partial(push_specific_style, style_to_push=style_to_push, style_value_to_push=style_value_to_push)
+                yield PanfluteElementPredicateFilterPair(final_predicate, final_filter)
 
-    style_and_class_updating_element_predicate_filter_pairs: Sequence[predicate_filter_pair] = (
+    style_and_class_updating_element_predicate_filter_pairs: Sequence[AbstractPanfluteElementPredicateFilterPair] = (
         *create_stylings_update_filters_for_class_removals(element_is_table_element_in_gridlike_table, class_settings.gridlike_table_elements.removals),
         *create_stylings_update_filters_for_class_removals(element_is_table_element_in_table, class_settings.all_table_elements.removals),
         *create_stylings_update_filters_for_class_removals(element_is_div_with_any_classes, class_settings.divs.removals),
@@ -149,8 +150,5 @@ def page_remove_redundant_vestigial_stylings(context: OneNotePageExportTaskConte
     document_apply_element_predicate_filter_pairs_continuously_until_steady_state(doc, style_and_class_updating_element_predicate_filter_pairs)
 
     logger.info(f"🔥 Removing redundant vestigial styling elements: '{context.output_md_path}'")
-    element_cleanup_predicate_filter_pair = (
-        element_is_valid_for_children_promotion,
-        create_predicated_element_filter(element_is_valid_for_children_promotion, promote_element_children)
-    )
+    element_cleanup_predicate_filter_pair = PanfluteElementPredicateFilterPair(element_predicate=element_is_valid_for_children_promotion, element_filter=promote_element_children)
     document_apply_element_predicate_filter_pairs_continuously_until_steady_state(doc, [element_cleanup_predicate_filter_pair])
