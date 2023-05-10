@@ -3,6 +3,7 @@ from typing import Optional
 
 import panflute
 
+from markdown_dom.PanfluteElementPredicateFilterPair import PanfluteElementPredicateFilterPair
 from markdown_re import PanfluteElementLike
 from onenote_export.OneNotePageExportTaskContext import OneNotePageExportTaskContext
 from onenote_export.page_export_tasks._element_predicates import element_is_redundant_paragraph
@@ -10,8 +11,9 @@ from onenote_export.page_export_tasks._element_updates import \
     document_apply_element_predicate_filter_pairs_continuously_until_steady_state
 
 
-def _eject_redundant_paragraph_element(element: panflute.Para, _: panflute.Doc) -> Optional[PanfluteElementLike]:
-    single_child = element.content[0] if len(element.content) == 1 else None
+def _eject_redundant_paragraph_element(element: panflute.Element, _: panflute.Doc) -> Optional[PanfluteElementLike]:
+    element: panflute.Para
+    single_child: Optional[panflute.Element] = element.content[0] if len(element.content) == 1 else None
 
     if single_child and isinstance(single_child, element.container.oktypes):
         return (single_child,)
@@ -25,5 +27,5 @@ def _eject_redundant_paragraph_element(element: panflute.Para, _: panflute.Doc) 
 def page_eject_redundant_paragraph_elements(context: OneNotePageExportTaskContext, logger: logging.Logger):
     logger.info(f"📼 Ejecting redundant paragraph elements: '{context.output_md_path}'")
     doc = context.output_md_document
-    (predicate, element_filter) = (element_is_redundant_paragraph, _eject_redundant_paragraph_element)
-    document_apply_element_predicate_filter_pairs_continuously_until_steady_state(doc, ((predicate, element_filter),))
+    predicate_filter_pair = PanfluteElementPredicateFilterPair(element_is_redundant_paragraph, _eject_redundant_paragraph_element)
+    document_apply_element_predicate_filter_pairs_continuously_until_steady_state(doc, (predicate_filter_pair,))
