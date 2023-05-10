@@ -50,22 +50,28 @@ def element_is_table_element(element: panflute.Element) -> bool:
 def element_has_nongridlike_nested_elements(table: panflute.Table) -> bool:
     def _table_element_has_meaningful_rowspan(element: panflute.Element) -> bool:
         return element_has_attribute(element, "rowspan") \
-            and element.attributes["rowspan"] != '' \
+            and element.attributes["rowspan"].strip() != '' \
             and int(element.attributes["rowspan"]) > 1
 
     def _table_element_has_meaningful_colspan(element: panflute.Element) -> bool:
         return element_has_attribute(element, "colspan") \
-            and element.attributes["colspan"] != '' \
+            and element.attributes["colspan"].strip() != '' \
             and int(element.attributes["colspan"]) > 1
 
     def _table_element_has_meaningful_rowspan_or_colspan(element: panflute.Element) -> bool:
         return _table_element_has_meaningful_rowspan(element) or _table_element_has_meaningful_colspan(element)
 
-    return PanfluteElementAccumulatorElementFilterContext.any_elements(table, lambda e: element_is_table_element(e) and _table_element_has_meaningful_rowspan_or_colspan(e))
+    def element_is_table_element_with_meaningful_rowspan_or_colspan(element: panflute.Element) -> bool:
+        return element_is_table_element(element) and _table_element_has_meaningful_rowspan_or_colspan(element)
+
+    return PanfluteElementAccumulatorElementFilterContext.any_elements(table, element_is_table_element_with_meaningful_rowspan_or_colspan)
 
 
-def element_has_styled_table_elements(table: panflute.Table) -> bool:
-    return PanfluteElementAccumulatorElementFilterContext.any_elements(table, lambda e: element_is_table_element(e) and (('style' in e.attributes and e.attributes['style']) or e.classes))
+def element_is_table_with_any_stylized_descendant_elements(table: panflute.Table) -> bool:
+    def element_is_table_element_with_style_or_class(element: panflute.Element) -> bool:
+        return element_is_table_element(element) and (element_has_style(element) or element_has_classes(element))
+
+    return PanfluteElementAccumulatorElementFilterContext.any_elements(table, element_is_table_element_with_style_or_class)
 
 
 def element_is_gridlike_table(table: panflute.Table) -> bool:
@@ -73,7 +79,7 @@ def element_is_gridlike_table(table: panflute.Table) -> bool:
 
 
 def element_is_in_gridlike_table(element: panflute.Element) -> bool:
-    return element_is_gridlike_table(get_element_parent_table(element))
+    return element_is_gridlike_table(get_element_table(element))
 
 
 def element_is_div_element(element: panflute.Element) -> bool:
@@ -81,15 +87,15 @@ def element_is_div_element(element: panflute.Element) -> bool:
 
 
 def element_is_table_element_in_gridlike_table(element: panflute.Element) -> bool:
-    return element_is_table_element(element) and (element_is_gridlike_table(element) or element_is_in_gridlike_table(element))
+    return element_is_table_element(element) and element_is_in_gridlike_table(element)
 
 
 def element_is_table_element_in_table(element: panflute.Element) -> bool:
-    return element_is_table_element(element) and (isinstance(element, panflute.Table) or get_element_parent_table(element))
+    return element_is_table_element(element) and (isinstance(element, panflute.Table) or get_element_table(element))
 
 
 def element_has_attributes(element: panflute.Element) -> bool:
-    return isinstance(element, panflute.Element) and hasattr(element, "attributes") and element.attributes
+    return hasattr(element, "attributes") and element.attributes
 
 
 def element_has_attribute(element: panflute.Element, attribute_name: str) -> bool:
@@ -97,7 +103,7 @@ def element_has_attribute(element: panflute.Element, attribute_name: str) -> boo
 
 
 def element_has_style(element: panflute.Element) -> bool:
-    return element_has_attribute(element, "style") and element.attributes["style"] != ''
+    return element_has_attribute(element, "style") and element.attributes["style"].strip() != ''
 
 
 def element_has_specific_style_value(element: panflute.Element, style_name: str, style_value_condition: Optional[PanfluteElementStyleValuePredicate]) -> bool:
@@ -108,7 +114,7 @@ def element_has_specific_style_value(element: panflute.Element, style_name: str,
 
 
 def element_has_classes(element: panflute.Element) -> bool:
-    return isinstance(element, panflute.Element) and hasattr(element, "classes") and element.classes
+    return hasattr(element, "classes") and element.classes and len(element.classes) > 0
 
 
 def element_has_specific_class(element: panflute.Element, class_name: str) -> bool:
@@ -123,8 +129,8 @@ def element_is_div_with_any_classes(element: panflute.Element) -> bool:
     return element_has_classes(element) and element_is_div_element(element)
 
 
-def get_element_parent_table(element: panflute.Element) -> Optional[panflute.Table]:
-    parent = element.parent
+def get_element_table(element: panflute.Element) -> Optional[panflute.Table]:
+    parent = element
     while parent is not None and not isinstance(parent, panflute.Table):
         parent = parent.parent
     return parent
