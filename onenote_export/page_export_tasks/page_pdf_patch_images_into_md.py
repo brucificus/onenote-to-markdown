@@ -1,14 +1,11 @@
-import functools
 import logging
 import pathlib
-import re
-import urllib
-from typing import Tuple, Optional
-
-import panflute
+from typing import Tuple
 
 from markdown_dom.MarkdownDocument import PanfluteElementFilter, MarkdownDocument
 from onenote_export.OneNotePageExportTaskContext import OneNotePageExportTaskContext
+from onenote_export.page_export_tasks.ElementsUpdateExtractedPdfAssetLocalUrl import get_jpg_image_ordinal, \
+    ElementsUpdateExtractedPdfAssetLocalUrl
 from pdf_inspection.PdfDocumentPage import PdfDocumentPage
 
 
@@ -39,19 +36,6 @@ def page_pdf_patch_images_into_md(context: OneNotePageExportTaskContext, logger:
                     f"⚠️ Page {pdf_page.page_index + 1} of the PDF for '{context.output_md_path}' has {count_of_non_ignorable_drawings} non-empty drawings that are not exported.")
         return result_image_names
 
-    broken_image_path_pattern = re.compile(r"image(\d+)\.jpg")
-
-    def get_jpg_image_ordinal(element: panflute.Element) -> Optional[int]:
-        if not isinstance(element, panflute.Image):
-            return None
-
-        found = broken_image_path_pattern.findall(element.url)
-        if not found:
-            return None
-
-        image_number = int(found[-1])
-        return image_number
-
     def _count_broken_images(doc: MarkdownDocument) -> int:
         return doc.count_elements(lambda element: get_jpg_image_ordinal(element) is not None)
 
@@ -59,15 +43,8 @@ def page_pdf_patch_images_into_md(context: OneNotePageExportTaskContext, logger:
         doc = context.output_md_document
         element_filters: Tuple[PanfluteElementFilter, ...] = ()
 
-        def update_image_url(element: panflute.Element, _, new_image_url: str, image_index: int) -> Optional[panflute.Element]:
-            jpg_image_ordinal = get_jpg_image_ordinal(element)
-            if jpg_image_ordinal and jpg_image_ordinal == image_index+1:
-                element.url = new_image_url
-            return element
-
         for i, path in enumerate(image_names_to_fix):
-            path_str = urllib.parse.quote(str(path).encode('utf8'), safe='\\').replace('\\', '/')
-            element_filters += (functools.partial(update_image_url, new_image_url=path_str, image_index=i),)
+            element_filters += (ElementsUpdateExtractedPdfAssetLocalUrl(relative_asset_path=path, image_index=i),)
 
         doc.update_via_panflute_filters(element_filters=element_filters)
         remaining_broken_image_count = _count_broken_images(doc)
