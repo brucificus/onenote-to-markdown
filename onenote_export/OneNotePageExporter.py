@@ -9,11 +9,6 @@ from .OneNoteExportTaskFactory import OneNoteExportTaskFactory
 from .OneNotePageExportTaskContext import OneNotePageExportTaskContext
 from .OneNotePageExporterSettings import OneNotePageExporterSettings
 from .page_export_tasks import *
-from .page_export_tasks.page_eject_redundant_paragraph_elements import page_eject_redundant_paragraph_elements
-from .page_export_tasks.page_remove_extraneous_element_attributes import page_remove_extraneous_element_attributes
-from .page_export_tasks.page_remove_onenote_footer import page_remove_onenote_footer
-from .page_export_tasks.page_remove_redundant_vestigial_stylings import page_remove_redundant_vestigial_stylings
-from .page_export_tasks.page_table_element_colspec_cleanup import page_table_element_colspec_cleanup
 
 
 class OneNotePageExporter(OneNoteExportTaskBase):
@@ -53,15 +48,15 @@ class OneNotePageExporter(OneNoteExportTaskBase):
         )
         yield task_ensure_assets_dir_exists
 
-        task_page_reparse_embedded_html = create_subtask(
-            task_spec=page_reparse_embedded_html,
+        task_page_cleanup_output_markdown = create_subtask(
+            task_spec=page_cleanup_output_markdown,
             prerequisites=prerequisites
         )
-        yield task_page_reparse_embedded_html
+        yield task_page_cleanup_output_markdown
 
         task_page_extract_ordinated_assets_and_relink = create_subtask(
             task_spec=page_extract_ordinated_assets_and_relink,
-            prerequisites=(task_ensure_assets_dir_exists, task_page_reparse_embedded_html,)
+            prerequisites=(task_ensure_assets_dir_exists, task_page_cleanup_output_markdown,)
         )
         yield task_page_extract_ordinated_assets_and_relink
 
@@ -75,48 +70,6 @@ class OneNotePageExporter(OneNoteExportTaskBase):
             task_page_extract_ordinated_assets_and_relink,
             task_pdf_patch_images_into_md,
         )
-
-        task_page_remove_extraneous_element_attributes = None
-        if self._settings.pages_extra_attributes_settings:
-            major_document_content_shifts_prereqs = undepended_tasks
-            undepended_tasks = ()
-            task_page_remove_extraneous_element_attributes = create_subtask(
-                task_spec=page_remove_extraneous_element_attributes,
-                prerequisites=major_document_content_shifts_prereqs
-            )
-            undepended_tasks += (task_page_remove_extraneous_element_attributes,)
-            yield task_page_remove_extraneous_element_attributes
-
-        if self._settings.pages_table_element_colspec_handling:
-            major_document_content_shifts_prereqs = undepended_tasks
-            undepended_tasks = ()
-            task_page_table_element_colspec_cleanup = create_subtask(
-                task_spec=page_table_element_colspec_cleanup,
-                prerequisites=major_document_content_shifts_prereqs
-            )
-            undepended_tasks += (task_page_table_element_colspec_cleanup,)
-            yield task_page_table_element_colspec_cleanup
-
-        task_page_remove_redundant_vestigial_stylings = None
-        if self._settings.pages_content_class_settings or self._settings.pages_content_style_settings:
-            major_document_content_shifts_prereqs = undepended_tasks
-            undepended_tasks = ()
-            task_page_remove_redundant_vestigial_stylings = create_subtask(
-                task_spec=page_remove_redundant_vestigial_stylings,
-                prerequisites=major_document_content_shifts_prereqs,
-            )
-            undepended_tasks += (task_page_remove_redundant_vestigial_stylings,)
-            yield task_page_remove_redundant_vestigial_stylings
-
-        if task_page_remove_redundant_vestigial_stylings or task_page_remove_extraneous_element_attributes:
-            major_document_content_shifts_prereqs = undepended_tasks
-            undepended_tasks = ()
-            task_page_eject_redundant_paragraph_elements = create_subtask(
-                task_spec=page_eject_redundant_paragraph_elements,
-                prerequisites=major_document_content_shifts_prereqs,
-            )
-            undepended_tasks += (task_page_eject_redundant_paragraph_elements,)
-            yield task_page_eject_redundant_paragraph_elements
 
         if self._settings.pages_remove_onenote_footer:
             text_search_patches_prereqs = undepended_tasks
