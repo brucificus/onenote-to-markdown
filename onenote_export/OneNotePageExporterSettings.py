@@ -55,6 +55,19 @@ class OneNotePageContentExportExtraAttributesSettings:
     all_elements: OneNotePageContentExportElementExtraAttributesSettings
 
 
+def create_background_color_style_pusher() -> PanfluteElementContainerElementCtor:
+    def create_element(*args: panflute.Element) -> panflute.Element:
+        orig_parent_style = args[0].parent.attributes['style']
+        orig_parent_style_parsed = parse_html_style_attribute(orig_parent_style)
+        background_color = orig_parent_style_parsed.get('background-color', None)
+
+        new_element = panflute.Plain(*args)
+        new_element.attributes['style'] = f'background-color: {background_color};'
+        return new_element
+
+    return create_element
+
+
 @dataclasses.dataclass
 class OneNotePageExporterSettings:
     pages_remove_onenote_footer: bool
@@ -156,7 +169,9 @@ class OneNotePageExporterSettings:
                 ),
                 divs=OneNotePageContentExportElementClassSettings(
                     removals=(),
-                    pushes={},
+                    pushes={
+                        'background-color': create_background_color_style_pusher(),
+                    },
                 ),
                 all_table_elements=OneNotePageContentExportElementClassSettings(
                     removals=(),
